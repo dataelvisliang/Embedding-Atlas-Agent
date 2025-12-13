@@ -77,11 +77,11 @@ with st.sidebar:
 @st.fragment
 def chat_interface(selection, chat_model):
     """Chat interface as a fragment - reruns independently"""
-    st.markdown("### 💬 Chat with Selected Reviews")
-    
-    # Clear chat button with better styling
-    col_ctrl1, col_ctrl2 = st.columns([0.8, 0.2])
-    with col_ctrl2:
+    # Header and Clear button on the same row
+    col_header, col_clear = st.columns([0.8, 0.2])
+    with col_header:
+        st.markdown("### 💬 Chat with Selected Reviews")
+    with col_clear:
         if st.button("🗑️ Clear", help="Clear chat history"):
             st.session_state['chat_history'] = []
             st.rerun(scope="fragment")
