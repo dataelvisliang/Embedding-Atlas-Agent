@@ -1,6 +1,8 @@
 # Embedding Atlas - Powered by Nomic Embed V1.5 🚀
 A lightweight Python project that combines embedding visualization with Streamlit, leveraging Nomic's Atlas to help you explore embedding data interactively.
+
 Demo - https://dataelvisliang.github.io/Embedding-Atlas-Streamlit-App-Nomic/
+
 ## What It Does 🎯
 - Loads embedding vectors and related metadata
 - Uses Nomic Atlas for visualizing clusters and relationships in the embeddings
