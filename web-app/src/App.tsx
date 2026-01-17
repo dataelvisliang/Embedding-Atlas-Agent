@@ -25,7 +25,14 @@ function App() {
         const connector = await wasmConnector();
         c.databaseConnector(connector);
 
-        const dataUrl = new URL('/atlas/data/dataset.parquet', window.location.href).href;
+        // Use BASE_URL to correctly locate data on GitHub Pages (subdirectory) or Dev (root)
+        // import.meta.env.BASE_URL is set in vite.config.ts
+        const baseUrl = import.meta.env.BASE_URL.endsWith('/')
+          ? import.meta.env.BASE_URL
+          : import.meta.env.BASE_URL + '/';
+
+        const dataUrl = new URL(`${baseUrl}atlas/data/dataset.parquet`, window.location.origin).href;
+
         console.log("Loading parquet data from:", dataUrl);
         await c.exec(`
           CREATE OR REPLACE TABLE reviews AS
