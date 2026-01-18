@@ -102,9 +102,10 @@ export function useAgentChat(coordinator: Coordinator | null) {
                 const totalSelected = (selectedPoints as any).totalCount || selectedPoints.length;
                 console.log("[AgentChat] Total selected:", totalSelected, "Available:", selectedPoints.length);
 
-                // Token limit: ~12000 tokens ≈ 48000 characters (4 chars per token estimate)
-                const MAX_CONTEXT_CHARS = 48000;
-                const HEADER_RESERVE = 500; // Reserve for header/footer text
+                // Token limit: ~25000 tokens ≈ 100000 characters (4 chars per token estimate)
+                // Model has 256k context, so this leaves plenty of room for response + tool results
+                const MAX_CONTEXT_CHARS = 100000;
+                const HEADER_RESERVE = 1000; // Reserve for header/footer text
 
                 // Build reviews list, adding reviews until we hit the token limit
                 const reviewsFormatted: string[] = [];

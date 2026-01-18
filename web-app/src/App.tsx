@@ -50,7 +50,7 @@ function App() {
         console.log("[Selection] Total selected:", totalCount);
 
         // Fetch more reviews - we'll truncate based on token limit in useAgentChat
-        const query = `SELECT __row_index__ as identifier, Rating, description FROM reviews WHERE ${selectionPredicate} LIMIT 200`;
+        const query = `SELECT __row_index__ as identifier, Rating, description FROM reviews WHERE ${selectionPredicate} LIMIT 500`;
         console.log("[Selection] Querying sample:", query);
 
         const result = await coordinatorReady.query(query);
