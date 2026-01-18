@@ -1,58 +1,92 @@
 # Embedding Atlas - TripAdvisor Reviews Visualization
 
-A monorepo containing multiple deployment options for visualizing TripAdvisor hotel reviews using Apple's Embedding Atlas.
+An interactive visualization and analysis tool for TripAdvisor hotel reviews using Apple's Embedding Atlas with an AI-powered analyst agent.
 
-## Project Structure
+## Live Demo
 
+**Vercel App:** [embedding-atlas-app.vercel.app](https://embedding-atlas-app.vercel.app) (or your deployed URL)
+
+## Atlas Analyst Agent
+
+The web app includes an AI analyst that can query and analyze the review dataset through natural language. Select points on the map and ask questions — the agent will execute queries and synthesize findings.
+
+### Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| SQL Queries | Execute complex queries with aggregations, filters, and grouping |
+| Text Search | Find reviews by keywords or phrases (case-insensitive) |
+| Statistics | Get total counts, averages, and rating distributions |
+| Sampling | Retrieve example reviews with optional rating filters |
+| Summarization | Natural language synthesis of query results |
+
+### Example Questions
+
+- "What's the average rating of reviews mentioning breakfast?"
+- "How many 1-star reviews are there? What do they complain about?"
+- "Find reviews that mention 'noisy' or 'loud'"
+- "Show me the rating distribution"
+- "What are the common themes in negative reviews?"
+
+### How It Works
+
+1. **Select reviews** on the Atlas map using lasso or rectangle selection
+2. **Ask a question** in the chat widget
+3. The agent **calls tools** (SQL, text search, stats) to gather data
+4. Results are **synthesized** into a natural language response
+
+The agent uses a multi-step reasoning loop, executing up to 8 tool calls per request to answer complex questions.
+
+### Architecture
+
+```mermaid
+flowchart TB
+    subgraph Browser["Browser (Frontend)"]
+        Atlas["Embedding Atlas<br/>2D visualization + selection"]
+        Chat["Chat Widget<br/>Messages + input"]
+        DuckDB["DuckDB-WASM<br/>20k+ reviews in-browser"]
+        Tools["Tool Executor<br/>sql_query | text_search | get_stats | get_sample"]
+        
+        Atlas -->|"selected points"| Chat
+        Tools -->|"query"| DuckDB
+        DuckDB -->|"results"| Tools
+    end
+    
+    subgraph Vercel["Vercel Serverless"]
+        API["/api/agent<br/>Tool definitions + routing"]
+    end
+    
+    subgraph LLM["OpenRouter API"]
+        Model["nvidia/nemotron-3-nano<br/>Reasoning + synthesis"]
+    end
+    
+    Chat -->|"user question"| API
+    API -->|"messages + tools"| Model
+    Model -->|"tool_calls"| API
+    API -->|"execute tools"| Tools
+    Tools -->|"tool results"| API
+    Model -->|"final response"| API
+    API -->|"response"| Chat
 ```
-├── streamlit/          # Python Streamlit app with LLM chat
-├── static-demo/        # Static HTML export for GitHub Pages
-├── vercel-app/         # Next.js app for Vercel deployment
-└── README.md
-```
-
-## Deployment Options
-
-### 1. Streamlit Cloud (Full Features)
-Interactive app with LLM-powered chat to analyze selected reviews.
-
-```bash
-cd streamlit
-pip install -r requirements.txt
-streamlit run 3_visualize_atlas_with_llm_deploy.py
-```
-
-**Deploy:** Push to GitHub and connect to [Streamlit Cloud](https://streamlit.io/cloud)
-
-### 2. GitHub Pages (Static)
-Lightweight static visualization without server requirements.
-
-**Deploy:** Enable GitHub Pages in repo settings, set source to `/static-demo` folder.
-
-### 3. Vercel (Next.js)
-Modern React-based app with server-side capabilities.
-
-```bash
-cd vercel-app
-npm install
-npm run dev
-```
-
-**Deploy:** Push to GitHub and import to [Vercel](https://vercel.com)
 
 ## Features
 
-- Interactive 2D embedding visualization
-- Cluster exploration with automatic labeling
-- Search and filter reviews
-- LLM chat analysis (Streamlit version only)
+- Interactive 2D embedding visualization with 20,000+ reviews
+- Automatic cluster labeling and topic detection
+- Lasso/rectangle selection for data exploration
+- Real-time AI analysis of selected reviews
+- Tool execution feedback in chat UI
 
 ## Tech Stack
 
-- **Visualization:** [Apple Embedding Atlas](https://apple.github.io/embedding-atlas/)
-- **Embeddings:** Nomic Embed V1.5
-- **Frameworks:** Streamlit, Next.js
-- **LLM:** OpenRouter API (free models)
+| Component | Technology |
+|-----------|------------|
+| Visualization | Apple Embedding Atlas |
+| Embeddings | Nomic Embed V1.5 |
+| Data Engine | DuckDB-WASM + Mosaic |
+| Frontend | React + TypeScript + Vite |
+| Backend | Vercel Serverless Functions |
+| LLM | OpenRouter API (nvidia/nemotron-3-nano) |
 
 ## Data Pipeline
 
@@ -62,4 +96,8 @@ npm run dev
 
 ## License
 
-MIT
+This project is licensed for **non-commercial use only**.
+
+For commercial use, please contact the author for permission.
+
+See [LICENSE](LICENSE) for details.

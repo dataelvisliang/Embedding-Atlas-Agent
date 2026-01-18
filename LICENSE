@@ -1,0 +1,42 @@
+# Non-Commercial License
+
+Copyright (c) 2026 Elvis Liang
+
+## Terms and Conditions
+
+### 1. Permitted Use
+
+You are permitted to use, copy, modify, and distribute this software for **non-commercial purposes only**, provided that:
+
+- You include this license notice in all copies or substantial portions of the software
+- You give appropriate credit to the original author
+- You do not use the software for commercial purposes without prior written permission
+
+### 2. Non-Commercial Definition
+
+"Non-commercial" means personal use, academic research, educational purposes, or use by non-profit organizations. It explicitly excludes:
+
+- Selling the software or any derivative works
+- Using the software in a commercial product or service
+- Using the software to generate revenue directly or indirectly
+
+### 3. Commercial Use
+
+For any commercial use of this software, you must obtain prior written permission from the copyright holder. Contact the author to discuss licensing terms.
+
+### 4. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+### 5. Third-Party Components
+
+This project uses third-party libraries and components that may be subject to their own licenses:
+
+- **embedding-atlas** - Apple (see their license)
+- **DuckDB** - MIT License
+- **React** - MIT License
+- Other dependencies as listed in package.json
+
+Users are responsible for complying with all applicable third-party licenses.
