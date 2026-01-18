@@ -57,7 +57,7 @@ function App() {
         const rows = result.toArray();
         console.log("[Selection] Got", rows.length, "sample points");
 
-        // Transform to match expected format, include total count
+        // Transform to match expected format
         const points = rows.map((r: any) => ({
           identifier: r.identifier,
           text: r.description,
@@ -67,12 +67,9 @@ function App() {
           }
         }));
 
-        // Store total count in the first point for reference
-        if (points.length > 0) {
-          points[0]._totalSelected = totalCount;
-        }
-
-        setSelectedPoints(points.length > 0 ? Object.assign(points, { totalCount }) : []);
+        // Attach totalCount as array property for access
+        const pointsWithCount = Object.assign(points, { totalCount });
+        setSelectedPoints(pointsWithCount);
       } catch (err) {
         console.error("[Selection] Failed to fetch selected points:", err);
         setSelectedPoints([]);
