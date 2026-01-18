@@ -1,1 +1,0 @@
-{"props": {"data": {"id": "_row_index", "projection": {"x": "projection_x", "y": "projection_y"}, "text": "description", "neighbors": "neighbors"}, "initialState": {"version": "0.0.0"}}, "isStatic": true, "database": {"type": "wasm", "load": true}}
