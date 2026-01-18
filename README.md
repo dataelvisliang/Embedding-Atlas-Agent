@@ -2,9 +2,10 @@
 
 An interactive visualization and analysis tool for TripAdvisor hotel reviews using Apple's Embedding Atlas with an AI-powered analyst agent.
 
-## Live Demo
+## Atlas Agent Demo
 
-**Vercel App:** [embedding-atlas-app.vercel.app](https://embedding-atlas-app.vercel.app) (or your deployed URL)
+<video src="web-app/docs/assets/Atlas%20Agent%20Demo.mp4" controls="controls" style="max-width: 100%;">
+</video>
 
 ## Atlas Agent
 
