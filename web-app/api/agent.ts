@@ -141,14 +141,29 @@ AVAILABLE TOOLS:
 5. get_sample: Get sample reviews to understand the data
 6. get_topics: Get cluster topic labels currently visible on the Atlas map
 
+UNDERSTANDING CLUSTERS:
+The Atlas visualization is an embedding map where reviews are positioned based on semantic similarity.
+- Reviews that are CLOSE TOGETHER on the map share similar topics, themes, or language
+- Each CLUSTER is a group of semantically related reviews (e.g., all reviews about "pool and beach" or "business travel")
+- CLUSTER LABELS (like "amsterdam-museums-tram-hotel") are auto-generated keywords summarizing the common themes in that area
+- When users select points in the same cluster, they're selecting reviews about the same general topic
+- The get_topics tool retrieves currently visible cluster labels from the map
+
 INSTRUCTIONS:
 - Always use tools to gather data before answering questions
 - For multi-word queries like "breakfast at Bali Villa", use flexible_search with terms=["breakfast", "Bali Villa"] and mode="AND"
 - flexible_search returns individual term counts - use these to explain data availability
 - For quantitative questions (counts, averages), use sql_query
 - Use get_topics to see what clusters/themes are visible on the map
+- For CLUSTER DENSITY ANALYSIS: Use sql_query with FLOOR(projection_x/bin_size) and FLOOR(projection_y/bin_size) to group points into spatial bins and find dense clusters. Smaller bin sizes (e.g., 0.5) = more granular, larger (e.g., 2.0) = broader clusters
 - Show your reasoning and cite specific data
 - Be concise but thorough
+
+VISUALIZATION CAPABILITIES:
+- When your tools return reviews with IDs, those points are AUTOMATICALLY HIGHLIGHTED on the Atlas map with orange circles
+- This helps users visually locate the reviews you're discussing in the embedding space
+- Include __row_index__ in SQL queries when you want results to be highlighted: SELECT __row_index__, ... FROM reviews
+- You can tell users: "I've highlighted these reviews on the map" when your query returns specific reviews
 
 EXAMPLES:
 - "What about breakfast at Bali Villa?" → flexible_search({terms: ["breakfast", "Bali Villa"], mode: "AND"})
@@ -156,7 +171,8 @@ EXAMPLES:
 - "What do people say about breakfast?" → text_search("breakfast")
 - "What's the average rating?" → get_stats with include_rating_distribution=true
 - "How many 5-star reviews?" → sql_query("SELECT COUNT(*) FROM reviews WHERE Rating = 5")
-- "What topics are on the map?" → get_topics()`;
+- "What topics are on the map?" → get_topics()
+- "Find dense clusters" → sql_query("SELECT FLOOR(projection_x/1.0) as bin_x, FLOOR(projection_y/1.0) as bin_y, COUNT(*) as count, AVG(Rating) as avg_rating FROM reviews GROUP BY bin_x, bin_y HAVING count > 10 ORDER BY count DESC LIMIT 10")`;
 
 interface AgentMessage {
     role: 'system' | 'user' | 'assistant' | 'tool';
@@ -240,8 +256,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('[Agent] OpenRouter error:', response.status, errorText);
+
+            // Try to parse the error message from OpenRouter
+            let errorMessage = response.statusText;
+            try {
+                const errorData = JSON.parse(errorText);
+                if (errorData.error?.message) {
+                    errorMessage = errorData.error.message;
+                }
+            } catch {
+                // If parsing fails, use the raw text if available
+                if (errorText && errorText.length < 200) {
+                    errorMessage = errorText;
+                }
+            }
+
             return res.status(response.status).json({
-                error: `OpenRouter API error: ${response.statusText}`
+                error: `OpenRouter API error: ${errorMessage}`
             });
         }
 
