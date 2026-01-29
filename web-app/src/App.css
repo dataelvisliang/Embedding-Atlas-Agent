@@ -65,23 +65,46 @@
 .chat-fab {
   background: linear-gradient(135deg, #6366f1, #3b82f6);
   color: white;
-  border: none;
+  border: 2px solid transparent;
   border-radius: 50px;
-  padding: 14px 28px;
+  padding: 12px 26px;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: 600;
   font-size: 16px;
   letter-spacing: 0.3px;
+  position: relative;
+  background-clip: padding-box;
 }
 
 .chat-fab:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(99, 102, 241, 0.6);
+}
+
+/* 边缘流光效果 - Flowing light border effect */
+.chat-fab.loading {
+  border-color: transparent;
+  background:
+    linear-gradient(135deg, #6366f1, #3b82f6) padding-box,
+    linear-gradient(var(--angle, 0deg), #60a5fa, #a78bfa, #f472b6, #60a5fa) border-box;
+  animation: border-rotate 2s linear infinite;
+}
+
+@keyframes border-rotate {
+  to {
+    --angle: 360deg;
+  }
+}
+
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
 .chat-window {
@@ -236,7 +259,7 @@
 .chat-input-area button {
   background: #3b82f6;
   color: white;
-  border: none;
+  border: 2px solid transparent;
   border-radius: 12px;
   width: 44px;
   min-height: 44px;
@@ -247,11 +270,24 @@
   justify-content: center;
   flex-shrink: 0;
   align-self: flex-end;
+  background-clip: padding-box;
 }
 
-.chat-input-area button:hover {
+.chat-input-area button:hover:not(.loading) {
   background: #2563eb;
   transform: translateY(-1px);
+}
+
+/* Send icon styling */
+.chat-input-area button svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* Send button loading state */
+.chat-input-area button.loading {
+  cursor: pointer;
 }
 
 /* Scrollbar styles */

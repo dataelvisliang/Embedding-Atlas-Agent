@@ -51,6 +51,7 @@ export function useAgentChat(coordinator: Coordinator | null) {
     });
 
     const toolExecutorRef = useRef<ToolExecutor | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     // Initialize tool executor when coordinator is available
     if (coordinator && !toolExecutorRef.current) {
@@ -114,6 +115,10 @@ export function useAgentChat(coordinator: Coordinator | null) {
             currentStep: 'Thinking...',
             toolsExecuted: []
         }));
+
+        // Create abort controller for this request
+        abortControllerRef.current = new AbortController();
+        const signal = abortControllerRef.current.signal;
 
         try {
             // Build conversation history for the API
@@ -255,7 +260,8 @@ ${reviewsList}
                 const response = await fetch('/api/agent', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: messagesToSend })
+                    body: JSON.stringify({ messages: messagesToSend }),
+                    signal
                 });
 
                 if (!response.ok) {
@@ -348,6 +354,22 @@ ${reviewsList}
             throw new Error(`Analysis reached the limit of ${maxIterations} steps. ${toolsSummary} Please try a more specific question.`);
 
         } catch (error) {
+            // Check if this was an abort
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.log('[AgentChat] Request was cancelled by user');
+                setState(prev => ({
+                    ...prev,
+                    isLoading: false,
+                    isExecutingTools: false,
+                    currentStep: '',
+                    messages: [...prev.messages, {
+                        role: 'assistant',
+                        content: 'Request cancelled.'
+                    }]
+                }));
+                return;
+            }
+
             console.error('[AgentChat] Error:', error);
             const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
 
@@ -362,6 +384,8 @@ ${reviewsList}
                     content: `I encountered an error: ${errorMessage}\n\nPlease try again or rephrase your question.`
                 }]
             }));
+        } finally {
+            abortControllerRef.current = null;
         }
     }, [state.messages, state.isLoading, coordinator]);
 
@@ -390,10 +414,20 @@ ${reviewsList}
         }));
     }, []);
 
+    /**
+     * Stop the current generation/thinking process
+     */
+    const stopGeneration = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+    }, []);
+
     return {
         ...state,
         sendMessage,
         clearChat,
-        clearHighlight
+        clearHighlight,
+        stopGeneration
     };
 }

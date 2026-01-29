@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { coordinator, wasmConnector, Coordinator } from '@uwdata/mosaic-core';
 import { EmbeddingAtlas } from '@dataelvisliang/embedding-atlas/react';
-import { MessageCircle, X, Send, Trash2, Database, Search, BarChart3 } from 'lucide-react';
+import { MessageCircle, X, Send, Square, Trash2, Database, Search, BarChart3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAgentChat } from './hooks/useAgentChat';
@@ -21,7 +21,7 @@ function App() {
   const [coordinatorReady, setCoordinatorReady] = useState<Coordinator | null>(null);
 
   // Resizable chat window state
-  const [chatSize, setChatSize] = useState({ width: 440, height: 600 });
+  const [chatSize, setChatSize] = useState({ width: 550, height: 650 });
   const [isResizing, setIsResizing] = useState(false);
   const resizeRef = useRef<{ startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
 
@@ -36,7 +36,8 @@ function App() {
     highlightIds,
     sendMessage,
     clearChat,
-    clearHighlight
+    clearHighlight,
+    stopGeneration
   } = useAgentChat(coordinatorReady);
 
   // Fetch selected points when predicate changes
@@ -230,7 +231,7 @@ function App() {
 
       <div className={`chat-widget ${isChatOpen ? 'open' : ''}`}>
         {!isChatOpen && (
-          <button className="chat-fab" onClick={() => setIsChatOpen(true)}>
+          <button className={`chat-fab ${isLoading ? 'loading' : ''}`} onClick={() => setIsChatOpen(true)}>
             <MessageCircle size={24} />
             <span>Atlas Agent</span>
             {selectedPoints.length > 0 && (
@@ -358,12 +359,11 @@ function App() {
                 disabled={isLoading}
                 rows={1}
               />
-              <button onClick={handleSend} disabled={isLoading}>
-                {isLoading ? (
-                  <div className="spinner-small" />
-                ) : (
-                  <Send size={18} />
-                )}
+              <button
+                className={isLoading ? 'loading' : ''}
+                onClick={isLoading ? stopGeneration : handleSend}
+              >
+                {isLoading ? <Square size={12} fill="currentColor" /> : <Send size={12} />}
               </button>
             </div>
           </div>
