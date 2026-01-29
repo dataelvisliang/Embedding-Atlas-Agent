@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { coordinator, wasmConnector, Coordinator } from '@uwdata/mosaic-core';
 import { EmbeddingAtlas } from '@dataelvisliang/embedding-atlas/react';
 import { MessageCircle, X, Send, Trash2, Database, Search, BarChart3 } from 'lucide-react';
@@ -19,6 +19,11 @@ function App() {
   const [selectedPoints, setSelectedPoints] = useState<any[]>([]);
   const [selectionPredicate, setSelectionPredicate] = useState<string | null>(null);
   const [coordinatorReady, setCoordinatorReady] = useState<Coordinator | null>(null);
+
+  // Resizable chat window state
+  const [chatSize, setChatSize] = useState({ width: 440, height: 600 });
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<{ startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +121,52 @@ function App() {
     init();
   }, []);
 
+  // Resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    resizeRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: chatSize.width,
+      startHeight: chatSize.height
+    };
+  }, [chatSize]);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !resizeRef.current) return;
+
+    // Since window is anchored at bottom-right, dragging left increases width
+    const deltaX = resizeRef.current.startX - e.clientX;
+    const deltaY = resizeRef.current.startY - e.clientY;
+
+    const newWidth = Math.max(320, Math.min(800, resizeRef.current.startWidth + deltaX));
+    const newHeight = Math.max(400, Math.min(window.innerHeight * 0.9, resizeRef.current.startHeight + deltaY));
+
+    setChatSize({ width: newWidth, height: newHeight });
+  }, [isResizing]);
+
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false);
+    resizeRef.current = null;
+  }, []);
+
+  // Attach global mouse events for resize
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = 'nwse-resize';
+      document.body.style.userSelect = 'none';
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleResizeMove, handleResizeEnd]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMessage = input.trim();
@@ -189,7 +240,20 @@ function App() {
         )}
 
         {isChatOpen && (
-          <div className="chat-window">
+          <div
+            className="chat-window"
+            style={{
+              width: `${chatSize.width}px`,
+              height: `${chatSize.height}px`,
+              maxHeight: '90vh'
+            }}
+          >
+            {/* Resize handle */}
+            <div
+              className="resize-handle"
+              onMouseDown={handleResizeStart}
+              title="Drag to resize"
+            />
             <div className="chat-header">
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <h3>
@@ -276,13 +340,23 @@ function App() {
             </div>
 
             <div className="chat-input-area">
-              <input
-                type="text"
-                placeholder={isLoading ? "Analyzing..." : "Ask about ratings, topics, trends..."}
+              <textarea
+                placeholder={isLoading ? "Analyzing..." : "Ask about ratings, topics, trends... (Shift+Enter for new line)"}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSend()}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Auto-resize textarea
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
                 disabled={isLoading}
+                rows={1}
               />
               <button onClick={handleSend} disabled={isLoading}>
                 {isLoading ? (

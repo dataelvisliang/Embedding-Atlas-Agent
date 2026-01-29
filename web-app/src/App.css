@@ -112,6 +112,19 @@
   }
 }
 
+/* Resize handle - invisible but functional */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  z-index: 10;
+  background: transparent;
+  border-top-left-radius: 20px;
+}
+
 .chat-header {
   padding: 18px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -186,27 +199,35 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   gap: 12px;
+  align-items: flex-end;
   background: rgba(0, 0, 0, 0.3);
 }
 
-.chat-input-area input {
+.chat-input-area textarea {
   flex: 1;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   color: white;
   font-family: inherit;
   font-size: 14px;
   outline: none;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  resize: none;
+  height: 44px;
+  min-height: 44px;
+  max-height: 120px;
+  line-height: 1.5;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
-.chat-input-area input::placeholder {
+.chat-input-area textarea::placeholder {
   color: #71717a;
 }
 
-.chat-input-area input:focus {
+.chat-input-area textarea:focus {
   border-color: #3b82f6;
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
@@ -218,13 +239,14 @@
   border: none;
   border-radius: 12px;
   width: 44px;
-  height: 44px;
+  min-height: 44px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  align-self: flex-end;
 }
 
 .chat-input-area button:hover {
@@ -335,9 +357,7 @@
 
 /* Message content formatting */
 .message-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: block;
 }
 
 .message-content p {
@@ -457,10 +477,21 @@
 .message-content ol {
   margin: 0.5em 0;
   padding-left: 1.5em;
+  display: block;
+  list-style-position: outside;
+}
+
+.message-content ul {
+  list-style-type: disc;
+}
+
+.message-content ol {
+  list-style-type: decimal;
 }
 
 .message-content li {
   margin: 0.25em 0;
+  display: list-item;
 }
 
 .message-content strong {

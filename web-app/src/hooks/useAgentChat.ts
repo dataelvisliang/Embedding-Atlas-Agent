@@ -23,13 +23,14 @@ export interface AgentState {
 
 const INITIAL_MESSAGE: Message = {
     role: 'assistant',
-    content: `Hello! I'm your AI data analyst for TripAdvisor reviews. 
+    content: `Hello! I'm your AI data analyst for TripAdvisor reviews.
 
 I can help you explore the dataset by:
-• **Searching** for reviews mentioning specific topics (breakfast, pool, noise, etc.)
-• **Analyzing** ratings, distributions, and trends
-• **Finding** examples of positive or negative reviews
-• **Answering** questions about the data
+
+- **Searching** for reviews mentioning specific topics (breakfast, pool, noise, etc.)
+- **Analyzing** ratings, distributions, and trends
+- **Finding** examples of positive or negative reviews
+- **Answering** questions about the data
 
 Try asking: "What's the rating distribution?" or "What do people say about breakfast?"`
 };
