@@ -182,7 +182,34 @@ function App() {
   const handleDownloadChat = () => {
     const mdContent = messages.map(m => {
       const role = m.role === 'user' ? '**User**' : '**AI Sommelier**';
-      return `${role}:\n${m.content}\n\n---\n`;
+      
+      // Expand {{Category}} placeholders with actual review data
+      let content = m.content;
+      const categoryPattern = /\{\{([^}]+)\}\}/g;
+      content = content.replace(categoryPattern, (match, categoryName) => {
+        const categoryData = savedCategories.get(categoryName) as any;
+        if (!categoryData?.reviews) {
+          return match; // Keep original if no data found
+        }
+        
+        // Format reviews as markdown table
+        const reviews = categoryData.reviews as any[];
+        let table = `\n\n**${categoryName}** (${reviews.length} wines)\n\n`;
+        table += `| Wine | Points | Price | Description |\n`;
+        table += `|------|--------|-------|-------------|\n`;
+        
+        for (const review of reviews) {
+          const title = (review.title || 'Unknown').replace(/\|/g, '\\|');
+          const points = review.points || '-';
+          const price = review.price ? `$${review.price}` : '-';
+          const desc = (review.text || review.description || '').slice(0, 100).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+          table += `| ${title} | ${points} | ${price} | ${desc}... |\n`;
+        }
+        
+        return table;
+      });
+      
+      return `${role}:\n${content}\n\n---\n`;
     }).join('\n');
     
     const blob = new Blob([mdContent], { type: 'text/markdown' });
