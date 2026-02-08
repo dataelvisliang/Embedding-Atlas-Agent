@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { coordinator, wasmConnector, Coordinator } from '@uwdata/mosaic-core';
 import { EmbeddingAtlas } from '@dataelvisliang/embedding-atlas/react';
-import { MessageCircle, X, Send, Square, Trash2, Database, Search, BarChart3 } from 'lucide-react';
+import { MessageCircle, X, Send, Square, Trash2, Database, Search, BarChart3, Download } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAgentChat } from './hooks/useAgentChat';
@@ -179,6 +179,23 @@ function App() {
     await sendMessage(userMessage, selectedPoints, selectionPredicate);
   };
 
+  const handleDownloadChat = () => {
+    const mdContent = messages.map(m => {
+      const role = m.role === 'user' ? '**User**' : '**AI Sommelier**';
+      return `${role}:\n${m.content}\n\n---\n`;
+    }).join('\n');
+    
+    const blob = new Blob([mdContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sommelier-chat-${new Date().toISOString().slice(0,10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Tool icon mapping
   const getToolIcon = (toolName: string) => {
     switch (toolName) {
@@ -289,6 +306,9 @@ function App() {
                 )}
               </div>
               <div className="header-actions">
+                <button onClick={handleDownloadChat} title="Download chat history">
+                  <Download size={16} />
+                </button>
                 <button onClick={clearChat} title="Clear chat">
                   <Trash2 size={16} />
                 </button>
