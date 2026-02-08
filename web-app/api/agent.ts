@@ -221,19 +221,24 @@ AVAILABLE TOOLS:
 - \`get_sample\`, \`get_stats\`, \`get_topics\`: For quick overviews
 
 CRITICAL RULES:
-1. **Use analyze_cluster, NOT sql_query, to inspect cluster content**
-   - analyze_cluster returns a clean summary without bloating your context
-   - It includes: category, quality perception, flavor notes, quotes, review_ids
-2. **MANDATORY: Use save_reviews to bookmark findings**
+1. **NEVER use sql_query to fetch wine samples or examples**
+   - sql_query is ONLY for: finding clusters, counting, aggregations, filtering by metadata
+   - ❌ WRONG: "SELECT title, points, description FROM reviews WHERE variety='Pinot Noir' LIMIT 5"
+   - ✅ CORRECT: Use analyze_cluster to get wine samples from a cluster
+   - **When user asks for wine examples**: Find relevant clusters → analyze_cluster → save_reviews
+2. **Use analyze_cluster to inspect cluster content**
+   - analyze_cluster returns full review descriptions without bloating your context
+   - It includes: category, quality perception, flavor notes, quotes, review_ids, AND full reviews array
+3. **MANDATORY: Use save_reviews to bookmark findings**
    - You MUST call \`save_reviews(review_ids, category)\` for EVERY category you want to present
    - The category parameter becomes the lookup key for the UI
    - Example: save_reviews([123, 456, 789], "Classic Sangiovese")
-3. **Reference saved categories in your answer using {{CATEGORY}} syntax**
+4. **Reference saved categories in your answer using {{CATEGORY}} syntax**
    - ONLY use {{}} placeholders for categories you have already saved
    - Example: "I found classic profiles {{Classic Sangiovese}} and modern blends {{Super Tuscans}}"
    - The UI will automatically expand these into rich, interactive review cards
-4. **NEVER use brackets [Category: ...] format** - this will NOT render properly
-5. **Do NOT output raw review text or individual IDs** - only category placeholders
+5. **NEVER use brackets [Category: ...] format** - this will NOT render properly
+6. **Do NOT output raw review text or individual IDs** - only category placeholders
 
 STEP-BY-STEP WORKFLOW:
 For each category you want to present to the user:
