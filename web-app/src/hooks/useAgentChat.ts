@@ -326,7 +326,8 @@ ${reviewsList}
                                     if (matchingIds.length > 0) {
                                         // Extract full review data if available
                                         categoryData = {
-                                            category: analyzerData.category,
+                                            category: category, // Use the category from save_reviews call
+                                            analyzer_category: analyzerData.category, // Keep original for reference
                                             sentiment: analyzerData.sentiment,
                                             themes: analyzerData.themes,
                                             quotes: analyzerData.quotes,
