@@ -18,3 +18,18 @@ Thumbs.db
 
 # Node (if any experiments)
 node_modules/
+
+# Data
+*.npy
+*.npz
+*.parquet
+!web-app/public/atlas/data/dataset.parquet # Exception if we want this deployed (it's small enough now)
+data_pipeline/embeddings.npy
+data_pipeline/reviews_clean.csv
+data_pipeline/tripadvisor_hotel_reviews.csv
+data_pipeline/reviews_projected.parquet
+
+# Models
+models/
+cache/
+.cache/

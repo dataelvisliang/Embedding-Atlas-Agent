@@ -21,8 +21,23 @@ if 'df_viz' not in st.session_state:
 if load_button:
     try:
         with st.spinner("Loading projected reviews..."):
+            # Determine file path
+            import os
+            file_path = 'reviews_projected.parquet'
+            
+            # Check if file exists, if not look in data_pipeline
+            if not os.path.exists(file_path):
+                alt_path = os.path.join('..', 'data_pipeline', 'reviews_projected.parquet')
+                if os.path.exists(alt_path):
+                    file_path = alt_path
+                else:
+                    # Also try specific path if running from root without .. context
+                    alt_path_2 = os.path.join('data_pipeline', 'reviews_projected.parquet')
+                    if os.path.exists(alt_path_2):
+                        file_path = alt_path_2
+
             # Load from Parquet to preserve data types
-            df = pd.read_parquet('reviews_projected.parquet')
+            df = pd.read_parquet(file_path)
             
             # Verify neighbors column is properly formatted
             sample = df['neighbors'].iloc[0]
@@ -32,11 +47,11 @@ if load_button:
                 st.warning(f"⚠️ Neighbors type: {type(sample)}")
             
             st.session_state['df_viz'] = df
-            st.success(f"✅ Loaded {len(df):,} projected reviews")
+            st.success(f"✅ Loaded {len(df):,} projected reviews from {file_path}")
             
     except FileNotFoundError:
         st.error("❌ reviews_projected.parquet not found!")
-        st.info("Please run: python 2_reduce_dimensions.py")
+        st.info("Please run: python data_pipeline/2_reduce_dimensions.py")
         st.stop()
     except Exception as e:
         st.error(f"❌ Error loading data: {str(e)}")
