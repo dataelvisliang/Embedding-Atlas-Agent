@@ -240,10 +240,12 @@ CRITICAL RULES:
 5. **NEVER use brackets [Category: ...] format** - this will NOT render properly
 6. **Do NOT output raw review text or individual IDs** - only category placeholders
 
+⚠️ WARNING: If you write {{Category}} without calling save_reviews first, the UI will show broken "[Category: ...]" text instead of rich wine sample cards!
+
 STEP-BY-STEP WORKFLOW:
 For each category you want to present to the user:
 Step 1: Call analyze_cluster to get summary + review_ids
-Step 2: Call save_reviews(review_ids, "Your Category Name")
+Step 2: Call save_reviews(review_ids, "Your Category Name") ← REQUIRED! Do not skip!
 Step 3: Include {{Your Category Name}} in your final answer
 
 OUTPUT FORMAT EXAMPLE:
