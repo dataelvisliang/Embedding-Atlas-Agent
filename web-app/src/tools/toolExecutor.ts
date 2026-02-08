@@ -118,6 +118,12 @@ export class ToolExecutor {
                 case 'get_topics':
                     return this.getTopics(toolCall.id);
 
+                case 'analyze_cluster':
+                    return await this.analyzeCluster(toolCall.id, args.bin_x, args.bin_y, args.bin_size, args.sample_size);
+
+                case 'save_reviews':
+                    return this.saveReviews(toolCall.id, args.review_ids, args.category);
+
                 default:
                     return {
                         name,
@@ -466,6 +472,124 @@ export class ToolExecutor {
             };
         }
     }
+
+    /**
+     * Analyze a cluster by delegating to the Analyzer Agent
+     * Fetches reviews from the specified bin and sends them to /api/analyzer for analysis
+     */
+    private async analyzeCluster(
+        callId: string,
+        bin_x: number,
+        bin_y: number,
+        bin_size: number = 1.0,
+        sample_size: number = 10
+    ): Promise<ToolResult> {
+        const safeSize = Math.min(Math.max(1, sample_size || 10), 80);
+
+        // Fetch reviews from the specified bin
+        const sql = `
+            SELECT __row_index__, Rating, description
+            FROM reviews
+            WHERE FLOOR(projection_x/${bin_size}) = ${Math.floor(bin_x)}
+              AND FLOOR(projection_y/${bin_size}) = ${Math.floor(bin_y)}
+            LIMIT ${safeSize}
+        `;
+
+        let reviews: any[] = [];
+        try {
+            const result = await this.coordinator.query(sql);
+            const rows = result.toArray();
+            reviews = rows.map(r => ({
+                id: r.__row_index__,
+                rating: r.Rating,
+                text: r.description
+            }));
+        } catch (error) {
+            return {
+                name: 'analyze_cluster',
+                call_id: callId,
+                result: null,
+                error: `Failed to fetch reviews from cluster: ${error instanceof Error ? error.message : 'Unknown error'}`
+            };
+        }
+
+        if (reviews.length === 0) {
+            return {
+                name: 'analyze_cluster',
+                call_id: callId,
+                result: {
+                    category: 'Empty Cluster',
+                    sentiment: 'Mixed',
+                    themes: [],
+                    quotes: [],
+                    count: 0,
+                    avg_rating: 0,
+                    review_ids: [],
+                    bin_x,
+                    bin_y
+                }
+            };
+        }
+
+        // Call the Analyzer Agent API
+        try {
+            const response = await fetch('/api/analyzer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bin_x,
+                    bin_y,
+                    bin_size,
+                    reviews
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Analyzer API returned ${response.status}: ${errorText}`);
+            }
+
+            const analysisResult = await response.json();
+
+            return {
+                name: 'analyze_cluster',
+                call_id: callId,
+                result: {
+                    ...analysisResult,
+                    reviews  // Attach the full reviews array for save_reviews to use
+                }
+            };
+        } catch (error) {
+            return {
+                name: 'analyze_cluster',
+                call_id: callId,
+                result: null,
+                error: `Analyzer Agent failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+            };
+        }
+    }
+
+    /**
+     * Save reviews to client-side memory for later reference
+     * This is a lightweight operation that just returns a confirmation
+     * The actual storage is handled by useAgentChat.ts
+     */
+    private saveReviews(
+        callId: string,
+        review_ids: number[],
+        category: string
+    ): ToolResult {
+        return {
+            name: 'save_reviews',
+            call_id: callId,
+            result: {
+                saved: true,
+                count: review_ids.length,
+                category,
+                review_ids
+            }
+        };
+    }
 }
 
 /**
@@ -585,6 +709,57 @@ export const TOOL_DEFINITIONS = [
             parameters: {
                 type: "object",
                 properties: {}
+            }
+        }
+    },
+    {
+        type: "function" as const,
+        function: {
+            name: "analyze_cluster",
+            description: "Delegate cluster analysis to a specialized Analyzer Agent. Provide coordinates of a dense cluster (bin_x, bin_y) and optionally the number of reviews to sample. The Analyzer will fetch reviews, analyze them, and return a lightweight summary containing: category label, sentiment, key themes, and representative quotes. This tool does NOT consume your context window - only the summary is returned.",
+            parameters: {
+                type: "object",
+                properties: {
+                    bin_x: {
+                        type: "number",
+                        description: "X coordinate of the cluster bin (from FLOOR(projection_x/bin_size))"
+                    },
+                    bin_y: {
+                        type: "number",
+                        description: "Y coordinate of the cluster bin (from FLOOR(projection_y/bin_size))"
+                    },
+                    bin_size: {
+                        type: "number",
+                        description: "Size of the bin (default: 1.0). Match the bin_size used in your dense cluster query."
+                    },
+                    sample_size: {
+                        type: "number",
+                        description: "Number of reviews to analyze (default: 10, max: 80). Use higher values when user explicitly requests more samples."
+                    }
+                },
+                required: ["bin_x", "bin_y"]
+            }
+        }
+    },
+    {
+        type: "function" as const,
+        function: {
+            name: "save_reviews",
+            description: "Save a collection of verified reviews under a category label for the final answer. Use this AFTER you have confirmed (via analyze_cluster or other tools) that the reviews are relevant to the user's query. The reviews will be displayed as category cards in the UI when you reference them as {{CATEGORY_NAME}}.",
+            parameters: {
+                type: "object",
+                properties: {
+                    review_ids: {
+                        type: "array",
+                        items: { type: "number" },
+                        description: "Array of review IDs (__row_index__) to save"
+                    },
+                    category: {
+                        type: "string",
+                        description: "Category label (e.g., 'Noise Complaints', 'Cleanliness Issues', 'Excellent Service')"
+                    }
+                },
+                required: ["review_ids", "category"]
             }
         }
     }

@@ -34,6 +34,7 @@ function App() {
     currentStep,
     toolsExecuted,
     highlightIds,
+    savedCategories,
     sendMessage,
     clearChat,
     clearHighlight,
@@ -297,7 +298,112 @@ function App() {
                 <div key={i} className={`message ${msg.role}`}>
                   <div className="message-content">
                     {msg.role === 'assistant' ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                      <>
+                        {/* Process content to replace {{CATEGORY}} placeholders */}
+                        {(() => {
+                          const content = msg.content;
+                          // Match {{anything}} - use [^}]+ to capture everything except closing braces
+                          const categoryRegex = /\{\{([^}]+)\}\}/g;
+                          const parts: React.ReactNode[] = [];
+                          let lastIndex = 0;
+                          let match;
+
+                          while ((match = categoryRegex.exec(content)) !== null) {
+                            // Add text before the match
+                            if (match.index > lastIndex) {
+                              parts.push(
+                                <ReactMarkdown key={`text-${lastIndex}`} remarkPlugins={[remarkGfm]}>
+                                  {content.slice(lastIndex, match.index)}
+                                </ReactMarkdown>
+                              );
+                            }
+
+                            // Add category card for the match
+                            const categoryKey = match[1];
+                            console.log('[UI] Found category placeholder:', categoryKey);
+                            console.log('[UI] savedCategories Map:', savedCategories);
+                            const categoryData = savedCategories?.get(categoryKey);
+                            console.log('[UI] Category data for', categoryKey, ':', categoryData);
+
+                            if (categoryData && categoryData.length > 0) {
+                              const data = categoryData[0]; // Get first entry
+                              const reviews = data.reviews || [];
+                              
+                              parts.push(
+                                <div key={`category-${match.index}`} style={{
+                                  margin: '12px 0',
+                                  padding: '16px',
+                                  background: 'rgba(59, 130, 246, 0.05)',
+                                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                                  borderRadius: '8px'
+                                }}>
+                                  <div style={{ fontWeight: 'bold', marginBottom: '12px', color: '#60a5fa', fontSize: '16px' }}>
+                                    📦 {data.category || categoryKey}
+                                  </div>
+                                  <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '12px' }}>
+                                    <span style={{ marginRight: '12px' }}>Sentiment: {data.sentiment}</span>
+                                    <span style={{ marginRight: '12px' }}>Avg Rating: {data.avg_rating}★</span>
+                                    <span>Samples: {reviews.length}</span>
+                                  </div>
+                                  {data.themes && data.themes.length > 0 && (
+                                    <div style={{ fontSize: '13px', marginBottom: '12px', opacity: 0.8 }}>
+                                      <strong>Themes:</strong> {data.themes.join(', ')}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Display all review samples */}
+                                  {reviews.length > 0 && (
+                                    <div style={{ marginTop: '12px' }}>
+                                      <strong style={{ fontSize: '13px', opacity: 0.9 }}>Sample Reviews:</strong>
+                                      <div style={{ maxHeight: '400px', overflowY: 'auto', marginTop: '8px' }}>
+                                        {reviews.map((review: any, idx: number) => (
+                                          <div key={idx} style={{
+                                            padding: '10px',
+                                            marginBottom: '8px',
+                                            background: 'rgba(255, 255, 255, 0.05)',
+                                            borderLeft: '3px solid rgba(59, 130, 246, 0.5)',
+                                            borderRadius: '4px',
+                                            fontSize: '12px'
+                                          }}>
+                                            <div style={{ fontWeight: 'bold', marginBottom: '4px', opacity: 0.6 }}>
+                                              Review #{idx + 1} - Rating: {review.rating || review.Rating}★
+                                            </div>
+                                            <div style={{ opacity: 0.85, lineHeight: '1.5' }}>
+                                              {review.text || review.description || review.excerpt}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            } else {
+                              // Fallback if category not found
+                              parts.push(
+                                <span key={`missing-${match.index}`} style={{ color: '#f97316' }}>
+                                  [Category: {categoryKey}]
+                                </span>
+                              );
+                            }
+
+                            lastIndex = categoryRegex.lastIndex;
+                          }
+
+                          // Add remaining text
+                          if (lastIndex < content.length) {
+                            parts.push(
+                              <ReactMarkdown key={`text-${lastIndex}`} remarkPlugins={[remarkGfm]}>
+                                {content.slice(lastIndex)}
+                              </ReactMarkdown>
+                            );
+                          }
+
+                          return parts.length > 0 ? parts : (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                          );
+                        })()}
+                      </>
                     ) : (
                       msg.content
                     )}

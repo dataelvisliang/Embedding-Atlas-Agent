@@ -1,94 +1,90 @@
 # Embedding Atlas - TripAdvisor Reviews Visualization
 
-An interactive visualization and analysis tool for TripAdvisor hotel reviews using Apple's Embedding Atlas with an AI-powered analyst agent.
+An interactive visualization and analysis tool for TripAdvisor hotel reviews using Apple's Embedding Atlas with an AI-powered Multi-Agent system.
 
 ## Atlas Agent Demo
 
 https://github.com/user-attachments/assets/75c8c0f0-cefe-4447-abb4-21fa4c1ade23
 
-## Atlas Agent
+## Multi-Agent Agentic Search
 
-The web app includes an AI analyst that can query and analyze the review dataset through natural language. Select points on the map and ask questions — the agent will execute queries and synthesize findings.
+The web app features a sophisticated **Multi-Agent Architecture** that enables autonomous data exploration and deep analysis without overwhelming the LLM's context window.
 
-### Capabilities
+### Features
 
-| Feature | Description |
-|---------|-------------|
-| SQL Queries | Execute complex queries with aggregations, filters, and grouping |
-| Text Search | Find reviews by keywords or phrases (case-insensitive) |
-| Statistics | Get total counts, averages, and rating distributions |
-| Sampling | Retrieve example reviews with optional rating filters |
-| Topic Discovery | See cluster labels visible on the map |
-| Summarization | Natural language synthesis of query results |
-
-### Example Questions
-
-- "What's the average rating of reviews mentioning breakfast?"
-- "How many 1-star reviews are there? What do they complain about?"
-- "Find reviews that mention 'noisy' or 'loud'"
-- "Show me the rating distribution"
-- "What topics are visible on the map?"
-- "What are the common themes in negative reviews?"
+| Feature                   | Description                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| **Multi-Agent System**    | **Orchestrator Agent** plans strategy; **Analyzer Agent** performs deep cluster analysis |
+| **Agentic Search**        | Autonomous exploration loop: Scan → Analyze → Evaluate → Save                            |
+| **Category Cards**        | Rich UI cards displaying themes, sentiment, ratings, and scrollable review samples       |
+| **Context Efficiency**    | Analyzes hundreds of reviews while keeping the main agent's context lightweight          |
+| **Client-Side Hydration** | Review details are hydrated on the client side, bypassing LLM token limits               |
 
 ### How It Works
 
-1. **Select reviews** on the Atlas map using lasso or rectangle selection
-2. **Ask a question** in the chat widget
-3. The agent **calls tools** (SQL, text search, stats) to gather data
-4. Results are **synthesized** into a natural language response
-
-The agent uses a multi-step reasoning loop, executing up to 8 tool calls per request to answer complex questions.
+1. **Global Scan**: The Orchestrator scans the map for dense clusters of reviews.
+2. **Delegated Analysis**: It delegates specific clusters to the **Analyzer Agent** (`analyze_cluster`).
+3. **Synthesis**: The Analyzer returns a structured summary (themes, sentiment, quotes).
+4. **Memory**: Relevant findings are bookmarked (`save_reviews`) and stored in client-side memory.
+5. **Presentation**: The final answer uses `{{Category}}` placeholders which expand into interactive **Category Cards** showing full review details.
 
 ### Architecture
 
 ```mermaid
 flowchart TB
-    subgraph Browser["Browser (Frontend)"]
-        Atlas["Embedding Atlas<br/>2D visualization + selection"]
-        Chat["Chat Widget<br/>Messages + input"]
-        DuckDB["DuckDB-WASM<br/>20k+ reviews in-browser"]
-        Tools["Tool Executor<br/>sql_query | text_search | get_stats | get_sample | get_topics"]
-        
-        Atlas -->|"selected points"| Chat
-        Tools -->|"query"| DuckDB
-        DuckDB -->|"results"| Tools
+    subgraph Frontend["React Frontend"]
+        Atlas["Embedding Atlas"]
+        Chat["Chat Widget"]
+        Memory["savedCategories Map<br/>(Client-Side Memory)"]
+        Tools["Tool Executor"]
+
+        Atlas --> Chat
+        Tools --> Memory
+        Memory --> Chat
     end
-    
-    subgraph Vercel["Vercel Serverless"]
-        API["/api/agent<br/>Tool definitions + routing"]
+
+    subgraph Backend["Vercel Serverless"]
+        Orchestrator["/api/agent<br/>Orchestrator Agent"]
+        Analyzer["/api/analyzer<br/>Analyzer Agent"]
     end
-    
+
     subgraph LLM["OpenRouter API"]
-        Model["nvidia/nemotron-3-nano<br/>Reasoning + synthesis"]
+        Model["LLM Model"]
     end
-    
-    Chat -->|"user question"| API
-    API -->|"messages + tools"| Model
-    Model -->|"tool_calls"| API
-    API -->|"execute tools"| Tools
-    Tools -->|"tool results"| API
-    Model -->|"final response"| API
-    API -->|"response"| Chat
+
+    Chat --> Orchestrator
+    Orchestrator --> Tools
+    Tools -->|"analyze_cluster"| Analyzer
+    Analyzer -->|"summary"| Orchestrator
+    Orchestrator -->|"save_reviews"| Memory
+    Orchestrator -->|"final answer"| Chat
 ```
 
-## Features
+## Capabilities
 
-- Interactive 2D embedding visualization with 20,000+ reviews
-- Automatic cluster labeling and topic detection
-- Lasso/rectangle selection for data exploration
-- Real-time AI analysis of selected reviews
-- Tool execution feedback in chat UI
+- **SQL Queries**: aggregations, filters, grouping via DuckDB-WASM
+- **Cluster Analysis**: Deep dive into specific map regions
+- **Review Saving**: Bookmark 15+ samples per category for user review
+- **Text Search**: Keyword matching
+- **Statistics**: Rating distributions and counts
+
+### Example Questions
+
+- "What are the main complaints in these hotel reviews?"
+- "Find positive feedback about breakfast and save examples."
+- "Analyze the cluster of negative reviews at the top left."
+- "Compare the service quality between business and family travelers."
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Visualization | Apple Embedding Atlas |
-| Embeddings | Nomic Embed V1.5 |
-| Data Engine | DuckDB-WASM + Mosaic |
-| Frontend | React + TypeScript + Vite |
-| Backend | Vercel Serverless Functions |
-| LLM | OpenRouter API (nvidia/nemotron-3-nano) |
+| Component     | Technology                               |
+| ------------- | ---------------------------------------- |
+| Visualization | Apple Embedding Atlas                    |
+| Embeddings    | Nomic Embed V1.5                         |
+| Data Engine   | DuckDB-WASM + Mosaic                     |
+| Frontend      | React + TypeScript + Vite                |
+| Backend       | Vercel Serverless Functions              |
+| AI Agents     | Orchestrator + Analyzer (via OpenRouter) |
 
 ## Data Pipeline
 

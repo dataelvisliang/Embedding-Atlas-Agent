@@ -19,6 +19,7 @@ export interface AgentState {
     error: string | null;
     toolsExecuted: string[];
     highlightIds: number[] | null;  // IDs of points to highlight on the map from tool results
+    savedCategories: Map<string, any[]>;  // Category-based memory: category name -> array of review objects
 }
 
 const INITIAL_MESSAGE: Message = {
@@ -47,7 +48,8 @@ export function useAgentChat(coordinator: Coordinator | null) {
         currentStep: '',
         error: null,
         toolsExecuted: [],
-        highlightIds: null
+        highlightIds: null,
+        savedCategories: new Map()
     });
 
     const toolExecutorRef = useRef<ToolExecutor | null>(null);
@@ -231,7 +233,7 @@ ${reviewsList}
                 console.log("[AgentChat] Selection context built with", reviewsIncluded, "reviews (~" + Math.round(totalChars / 4) + " tokens), total selected:", totalSelected);
             }
 
-            const maxIterations = 10; // Prevent infinite loops
+            const maxIterations = 30; // Agentic search allows for deeper exploration
             let iteration = 0;
             const allToolsExecuted: string[] = [];
 
@@ -241,18 +243,20 @@ ${reviewsList}
                 // Call the agent API
                 setState(prev => ({
                     ...prev,
-                    currentStep: iteration === 1 ? 'Thinking...' : `Processing... (step ${iteration})`
+                    currentStep: iteration === 1 ? 'Thinking...' : `Processing step ${iteration}/${maxIterations}...`
                 }));
 
-                // If we're on the last iteration, hint the LLM to wrap up
+                // If we're approaching the limit, hint the LLM to wrap up
+                // Give agent 3 steps to respond (inject at step 27, 28, 29)
                 let messagesToSend = conversationMessages;
-                if (iteration === maxIterations - 1) {
+                if (iteration >= maxIterations - 3) {
+                    const stepsRemaining = maxIterations - iteration;
                     // Add a system hint to stop using tools and give final answer
                     messagesToSend = [
                         ...conversationMessages,
                         {
                             role: 'system',
-                            content: 'IMPORTANT: You have used enough tools. Please provide your final answer now based on the information gathered. Do NOT call any more tools.'
+                            content: `IMPORTANT: You are approaching the step limit (${stepsRemaining} step${stepsRemaining > 1 ? 's' : ''} remaining). Please finalize your findings and provide the final comprehensive answer now. Do NOT call any more tools unless absolutely critical.`
                         } as any
                     ];
                 }
@@ -295,6 +299,58 @@ ${reviewsList}
                         toolResults.push(result);
 
                         console.log(`[Agent] Tool ${toolName} result:`, result);
+                    }
+
+                    // Handle save_reviews tool: extract reviews from analyze_cluster results
+                    for (const toolResult of toolResults) {
+                        if (toolResult.name === 'save_reviews' && toolResult.result?.saved) {
+                            const { review_ids, category } = toolResult.result;
+
+                            // Find the most recent analyze_cluster result that contains these IDs
+                            let categoryData: any = null;
+
+                            // Check all previous tool results in this iteration
+                            for (const prevResult of toolResults) {
+                                if (prevResult.name === 'analyze_cluster' && prevResult.result?.review_ids) {
+                                    const analyzerData = prevResult.result;
+                                    const analyzerReviewIds = analyzerData.review_ids;
+
+                                    // If the analyzer result contains the reviews we want to save
+                                    const matchingIds = review_ids.filter((id: number) =>
+                                        analyzerReviewIds.includes(id)
+                                    );
+
+                                    if (matchingIds.length > 0) {
+                                        // Extract full review data if available
+                                        categoryData = {
+                                            category: analyzerData.category,
+                                            sentiment: analyzerData.sentiment,
+                                            themes: analyzerData.themes,
+                                            quotes: analyzerData.quotes,
+                                            avg_rating: analyzerData.avg_rating,
+                                            review_ids: matchingIds,
+                                            reviews: analyzerData.reviews || [], // Full reviews array from analyzer
+                                            bin_x: analyzerData.bin_x,
+                                            bin_y: analyzerData.bin_y,
+                                            count: matchingIds.length
+                                        };
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Update savedCategories state
+                            if (categoryData) {
+                                setState(prev => ({
+                                    ...prev,
+                                    savedCategories: new Map(prev.savedCategories).set(
+                                        category,
+                                        [categoryData] // Store as array for consistency
+                                    )
+                                }));
+                                console.log(`[Agent] Saved category "${category}" with ${categoryData.count} review(s)`);
+                            }
+                        }
                     }
 
                     // Extract IDs from tool results and update highlight
@@ -400,7 +456,8 @@ ${reviewsList}
             currentStep: '',
             error: null,
             toolsExecuted: [],
-            highlightIds: null
+            highlightIds: null,
+            savedCategories: new Map()
         });
     }, []);
 
