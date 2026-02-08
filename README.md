@@ -58,6 +58,38 @@ flowchart TB
     Orchestrator -->|"final answer"| Chat
 ```
 
+#### Main Agent (Sommelier)
+
+The orchestrator agent that coordinates exploration and delegates analysis tasks.
+
+```mermaid
+flowchart LR
+    subgraph Tools["Available Tools"]
+        SQL["sql_query<br/>DuckDB Analytics"]
+        Text["text_search<br/>Keyword Search"]
+        Flex["flexible_search<br/>Multi-term AND/OR"]
+        Stats["get_stats<br/>Dataset Overview"]
+        Sample["get_sample<br/>Random Reviews"]
+        Topics["get_topics<br/>Map Labels"]
+        Analyze["analyze_cluster<br/>→ Delegates to Sub-Agent"]
+        Save["save_reviews<br/>→ Client Memory"]
+    end
+
+    Agent["Sommelier Agent<br/>/api/agent"] --> Tools
+    Tools --> Response["Final Answer<br/>with {{Category}} Cards"]
+```
+
+#### Sub-Agent (Analyzer)
+
+A specialized sub-agent that receives review data and extracts structured insights.
+
+```mermaid
+flowchart LR
+    Input["Reviews Array<br/>(from Main Agent)"] --> Analyzer["Analyzer Agent<br/>/api/analyzer"]
+    Analyzer --> LLM["LLM Call"]
+    LLM --> Output["Structured JSON:<br/>category, sentiment,<br/>themes, quotes"]
+```
+
 ## Capabilities
 
 - **Semantic Search**: Find wines by description (e.g., "barnyard funk", "cat pee on a gooseberry bush").
