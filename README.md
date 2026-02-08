@@ -2,6 +2,8 @@
 
 An interactive visualization and analysis tool for **130k Wine Reviews** using Apple's Embedding Atlas with an AI-powered Multi-Agent system.
 
+![Atlas Agent](images/Atlas%20Agent.png)
+
 ## Sommelier Agent Demo
 
 The web app features a sophisticated **Multi-Agent Architecture** that enables autonomous exploration of the wine landscape, acting as your personal AI Sommelier.
