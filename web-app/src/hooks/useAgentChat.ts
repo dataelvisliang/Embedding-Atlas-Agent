@@ -20,6 +20,7 @@ export interface AgentState {
     toolsExecuted: string[];
     highlightIds: number[] | null;  // IDs of points to highlight on the map from tool results
     savedCategories: Map<string, any[]>;  // Category-based memory: category name -> array of review objects
+    analyzeClusterCache: ToolResult[];  // Cache of all analyze_cluster results across rounds
 }
 
 const INITIAL_MESSAGE: Message = {
@@ -49,11 +50,13 @@ export function useAgentChat(coordinator: Coordinator | null) {
         error: null,
         toolsExecuted: [],
         highlightIds: null,
-        savedCategories: new Map()
+        savedCategories: new Map(),
+        analyzeClusterCache: [] // Store all analyze_cluster results across rounds
     });
 
     const toolExecutorRef = useRef<ToolExecutor | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const analyzeClusterCacheRef = useRef<ToolResult[]>([]);  // Sync cache for analyze_cluster results
 
     // Initialize tool executor when coordinator is available
     if (coordinator && !toolExecutorRef.current) {
@@ -301,6 +304,12 @@ ${reviewsList}
                         const result = await toolExecutorRef.current!.execute(toolCall);
                         toolResults.push(result);
 
+                        // Cache analyze_cluster results for later save_reviews calls
+                        if (result.name === 'analyze_cluster' && result.result?.review_ids) {
+                            analyzeClusterCacheRef.current.push(result);  // Sync update via ref
+                            console.log(`[Agent] Cached analyze_cluster result, total cached:`, analyzeClusterCacheRef.current.length);
+                        }
+
                         console.log(`[Agent] Tool ${toolName} result:`, result);
                     }
 
@@ -312,11 +321,29 @@ ${reviewsList}
                             // Find the most recent analyze_cluster result that contains these IDs
                             let categoryData: any = null;
 
-                            // Check all previous tool results in this iteration
-                            for (const prevResult of toolResults) {
+                            console.log(`[Agent] Processing save_reviews for category: "${category}", review_ids:`, review_ids);
+                            console.log(`[Agent] Current toolResults count:`, toolResults.length, toolResults.map(t => t.name));
+                            console.log(`[Agent] analyzeClusterCacheRef count:`, analyzeClusterCacheRef.current.length);
+
+                            // Check both current toolResults AND cached analyze_cluster results
+                            const allAnalyzeResults = [
+                                ...toolResults.filter(t => t.name === 'analyze_cluster'),
+                                ...analyzeClusterCacheRef.current
+                            ];
+
+                            console.log(`[Agent] Total analyze_cluster results to check:`, allAnalyzeResults.length);
+
+                            // Check all analyze_cluster results (current + cached)
+                            for (const prevResult of allAnalyzeResults) {
                                 if (prevResult.name === 'analyze_cluster' && prevResult.result?.review_ids) {
                                     const analyzerData = prevResult.result;
                                     const analyzerReviewIds = analyzerData.review_ids;
+
+                                    console.log(`[Agent] Checking analyze_cluster result:`, {
+                                        analyzer_category: analyzerData.category,
+                                        has_reviews: !!analyzerData.reviews,
+                                        review_count: analyzerData.reviews?.length
+                                    });
 
                                     // If the analyzer result contains the reviews we want to save
                                     const matchingIds = review_ids.filter((id: number) =>
@@ -324,6 +351,7 @@ ${reviewsList}
                                     );
 
                                     if (matchingIds.length > 0) {
+                                        console.log(`[Agent] Found ${matchingIds.length} matching IDs, creating categoryData`);
                                         // Extract full review data if available
                                         categoryData = {
                                             category: category, // Use the category from save_reviews call
@@ -353,6 +381,8 @@ ${reviewsList}
                                     )
                                 }));
                                 console.log(`[Agent] Saved category "${category}" with ${categoryData.count} review(s)`);
+                            } else {
+                                console.warn(`[Agent] Failed to save category "${category}" - no matching analyze_cluster result found`);
                             }
                         }
                     }
@@ -461,8 +491,10 @@ ${reviewsList}
             error: null,
             toolsExecuted: [],
             highlightIds: null,
-            savedCategories: new Map()
+            savedCategories: new Map(),
+            analyzeClusterCache: []
         });
+        analyzeClusterCacheRef.current = [];  // Also clear the ref cache
     }, []);
 
     /**

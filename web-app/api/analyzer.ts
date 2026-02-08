@@ -134,11 +134,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const llmData = await llmResponse.json();
-        const content = llmData.choices?.[0]?.message?.content;
+        console.log('[Analyzer] LLM response:', {
+            hasChoices: !!llmData.choices,
+            choicesLength: llmData.choices?.length,
+            firstChoice: llmData.choices?.[0],
+            message: llmData.choices?.[0]?.message
+        });
+        
+        // Handle both standard and reasoning token responses
+        const message = llmData.choices?.[0]?.message;
+        let content = message?.content;
+        
+        // If content is empty but there are reasoning_details, try to extract from there
+        if (!content && message?.reasoning_details) {
+            content = message.reasoning_details.map((d: any) => d.content).join('\n');
+        }
 
         if (!content) {
+            console.error('[Analyzer] No content in response. Message object:', message);
             return res.status(500).json({ error: 'No response from Analyzer Agent' });
         }
+        
+        console.log('[Analyzer] Extracted content:', content.substring(0, 200) + '...');
 
         // Parse JSON from LLM response
         let analysis: any;
