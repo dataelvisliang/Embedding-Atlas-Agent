@@ -75,7 +75,7 @@ flowchart TB
 | Component     | Technology                               |
 | ------------- | ---------------------------------------- |
 | Visualization | Apple Embedding Atlas                    |
-| Embeddings    | Nomic Embed V1.5                         |
+| Embeddings    | Qwen 3 (4B) via OpenRouter               |
 | Data Engine   | DuckDB-WASM + Mosaic                     |
 | Frontend      | React + TypeScript + Vite                |
 | Backend       | Vercel Serverless Functions              |
