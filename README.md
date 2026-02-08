@@ -1,32 +1,28 @@
-# Embedding Atlas - TripAdvisor Reviews Visualization
+# Wine Review Atlas - Sommelier AI Agent
 
-An interactive visualization and analysis tool for TripAdvisor hotel reviews using Apple's Embedding Atlas with an AI-powered Multi-Agent system.
+An interactive visualization and analysis tool for **130k Wine Reviews** using Apple's Embedding Atlas with an AI-powered Multi-Agent system.
 
-## Atlas Agent Demo
+## Sommelier Agent Demo
 
-https://github.com/user-attachments/assets/75c8c0f0-cefe-4447-abb4-21fa4c1ade23
-
-## Multi-Agent Agentic Search
-
-The web app features a sophisticated **Multi-Agent Architecture** that enables autonomous data exploration and deep analysis without overwhelming the LLM's context window.
+The web app features a sophisticated **Multi-Agent Architecture** that enables autonomous exploration of the wine landscape, acting as your personal AI Sommelier.
 
 ### Features
 
-| Feature                   | Description                                                                              |
-| ------------------------- | ---------------------------------------------------------------------------------------- |
-| **Multi-Agent System**    | **Orchestrator Agent** plans strategy; **Analyzer Agent** performs deep cluster analysis |
-| **Agentic Search**        | Autonomous exploration loop: Scan → Analyze → Evaluate → Save                            |
-| **Category Cards**        | Rich UI cards displaying themes, sentiment, ratings, and scrollable review samples       |
-| **Context Efficiency**    | Analyzes hundreds of reviews while keeping the main agent's context lightweight          |
-| **Client-Side Hydration** | Review details are hydrated on the client side, bypassing LLM token limits               |
+| Feature             | Description                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| **Sommelier Agent** | **Orchestrator Agent** that understands varietals, regions, and price points              |
+| **Flavor Analyzer** | **Analyzer Agent** that extracts flavor notes, acidity, tannins, and finish from clusters |
+| **Agentic Search**  | Autonomous exploration loop: Scan Regions → Analyze Flavors → Select Best Wines           |
+| **Vintage Memory**  | Bookmarks interesting wines with **Category Cards** (e.g., "Earthy Tuscan Reds")          |
+| **Interactive Map** | 2D semantic map of 130k wines where similar taste profiles are clustered together         |
 
 ### How It Works
 
-1. **Global Scan**: The Orchestrator scans the map for dense clusters of reviews.
-2. **Delegated Analysis**: It delegates specific clusters to the **Analyzer Agent** (`analyze_cluster`).
-3. **Synthesis**: The Analyzer returns a structured summary (themes, sentiment, quotes).
-4. **Memory**: Relevant findings are bookmarked (`save_reviews`) and stored in client-side memory.
-5. **Presentation**: The final answer uses `{{Category}}` placeholders which expand into interactive **Category Cards** showing full review details.
+1.  **Global Scan**: The Sommelier scans the map for dense clusters of unrelated wines or specific varietals.
+2.  **Delegated Analysis**: It delegates specific clusters to the **Analyzer Agent** to extract flavor profiles.
+3.  **Synthesis**: The Analyzer returns a structured summary (tasting notes, quality sentiment, representative quotes).
+4.  **Curation**: Relevant wines are saved as curated collections in the chat.
+5.  **Presentation**: The final answer displays interactive **Category Cards** allowing you to browse specific bottles.
 
 ### Architecture
 
@@ -44,12 +40,12 @@ flowchart TB
     end
 
     subgraph Backend["Vercel Serverless"]
-        Orchestrator["/api/agent<br/>Orchestrator Agent"]
-        Analyzer["/api/analyzer<br/>Analyzer Agent"]
+        Orchestrator["/api/agent<br/>Sommelier Agent"]
+        Analyzer["/api/analyzer<br/>Flavor Analyzer"]
     end
 
     subgraph LLM["OpenRouter API"]
-        Model["LLM Model"]
+        Model["LLM Model (e.g. Nemotron-70B)"]
     end
 
     Chat --> Orchestrator
@@ -62,18 +58,17 @@ flowchart TB
 
 ## Capabilities
 
-- **SQL Queries**: aggregations, filters, grouping via DuckDB-WASM
-- **Cluster Analysis**: Deep dive into specific map regions
-- **Review Saving**: Bookmark 15+ samples per category for user review
-- **Text Search**: Keyword matching
-- **Statistics**: Rating distributions and counts
+- **Semantic Search**: Find wines by description (e.g., "barnyard funk", "cat pee on a gooseberry bush").
+- **SQL Analytics**: Aggregate stats by price, points (80-100), country, or winery via DuckDB-WASM.
+- **Cluster Inspector**: Deep dive into specific map regions to understand local styles.
+- **Value Finder**: Identify high-scoring wines at low price points.
 
 ### Example Questions
 
-- "What are the main complaints in these hotel reviews?"
-- "Find positive feedback about breakfast and save examples."
-- "Analyze the cluster of negative reviews at the top left."
-- "Compare the service quality between business and family travelers."
+- "Find me some bold red wines under $20 that taste like chocolate."
+- "What are the main differences between the Pinot Noirs in the top-left vs bottom-right clusters?"
+- "Show me the rating distribution for French wines."
+- "I like earthy, tannic wines. What do you recommend?"
 
 ## Tech Stack
 
@@ -85,12 +80,15 @@ flowchart TB
 | Frontend      | React + TypeScript + Vite                |
 | Backend       | Vercel Serverless Functions              |
 | AI Agents     | Orchestrator + Analyzer (via OpenRouter) |
+| Dataset       | Wine Magazine (130k reviews)             |
 
 ## Data Pipeline
 
-1. `1_generate_embeddings_*.py` - Generate embeddings from review text
-2. `2_reduce_dimensions.py` - UMAP projection to 2D
-3. `3_visualize_atlas*.py` - Interactive visualization
+The project includes a robust Python pipeline to process the raw CSV into a visualization-ready format:
+
+1.  `1_generate_embeddings_OpenRouter.py` - Generate embeddings from wine descriptions using Nomic API.
+2.  `2_reduce_dimensions.py` - Dimensionality reduction (UMAP) to project 768d vectors to 2D.
+3.  `regenerate_static_export.py` - Packages the processed `winemag_projected.parquet` for the web app.
 
 ## License
 
