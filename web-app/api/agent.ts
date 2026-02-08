@@ -8,13 +8,13 @@ const TOOLS = [
         type: "function",
         function: {
             name: "sql_query",
-            description: "Execute a SQL SELECT query on the hotel reviews table. The table 'reviews' has columns: __row_index__ (int), description (text - the review content), Rating (int 1-5), projection_x (float), projection_y (float), neighbors (json). Use this for aggregations, counts, filtering, and complex queries.",
+            description: "Execute a SQL SELECT query on the wine reviews table. The table 'reviews' has columns: __row_index__ (int), description (text), points (int 80-100 - score), price (float - cost), title (text - wine name), variety (text - grape), winery (text), country (text), province (text), region_1 (text), projection_x (float), projection_y (float), neighbors (json). Use this for aggregations, counts, filtering, and complex queries.",
             parameters: {
                 type: "object",
                 properties: {
                     query: {
                         type: "string",
-                        description: "SQL SELECT query to execute. Examples: 'SELECT Rating, COUNT(*) FROM reviews GROUP BY Rating', 'SELECT AVG(Rating) FROM reviews', 'SELECT COUNT(*) FROM reviews WHERE Rating >= 4'"
+                        description: "SQL SELECT query to execute. Examples: 'SELECT points, COUNT(*) FROM reviews GROUP BY points', 'SELECT AVG(price) FROM reviews WHERE country = ''France''', 'SELECT * FROM reviews WHERE variety = ''Pinot Noir'' AND points >= 95'"
                     }
                 },
                 required: ["query"]
@@ -25,13 +25,13 @@ const TOOLS = [
         type: "function",
         function: {
             name: "text_search",
-            description: "Search for reviews containing specific keywords or phrases. Use this to find reviews mentioning topics like 'breakfast', 'pool', 'noise', 'staff', 'clean', etc.",
+            description: "Search for wine reviews containing specific keywords or phrases. Use this to find wines with specific notes like 'blackberry', 'oak', 'citrus', 'leather', 'tannins', etc.",
             parameters: {
                 type: "object",
                 properties: {
                     query: {
                         type: "string",
-                        description: "Keyword or phrase to search for in review text"
+                        description: "Keyword or phrase to search for in review description"
                     },
                     limit: {
                         type: "number",
@@ -46,13 +46,13 @@ const TOOLS = [
         type: "function",
         function: {
             name: "get_stats",
-            description: "Get overall statistics for the reviews dataset including total count, average rating, and rating distribution.",
+            description: "Get overall statistics for the wine dataset including total count, average points, and price distribution.",
             parameters: {
                 type: "object",
                 properties: {
-                    include_rating_distribution: {
+                    include_points_distribution: {
                         type: "boolean",
-                        description: "Whether to include breakdown by star rating (1-5)"
+                        description: "Whether to include breakdown by points (80-100)"
                     }
                 }
             }
@@ -62,7 +62,7 @@ const TOOLS = [
         type: "function",
         function: {
             name: "get_sample",
-            description: "Get a random sample of reviews to understand the data. Useful for getting examples of reviews with specific ratings.",
+            description: "Get a random sample of reviews to understand the data. Useful for getting examples of wines with specific scores.",
             parameters: {
                 type: "object",
                 properties: {
@@ -70,9 +70,13 @@ const TOOLS = [
                         type: "number",
                         description: "Number of sample reviews to retrieve (default: 5, max: 20)"
                     },
-                    rating_filter: {
+                    min_points: {
                         type: "number",
-                        description: "Optional: only get reviews with this star rating (1-5)"
+                        description: "Optional: minimum score (80-100)"
+                    },
+                    max_points: {
+                        type: "number",
+                        description: "Optional: maximum score (80-100)"
                     }
                 }
             }
@@ -82,19 +86,19 @@ const TOOLS = [
         type: "function",
         function: {
             name: "flexible_search",
-            description: "Search for reviews where MULTIPLE terms ALL appear in the SAME review. Default mode is AND - all terms must be present in each matching review. Supports regex patterns when regex=true (e.g., 'break(fast|fst)' for typos, 'Bali.*Villa' for flexible matching).",
+            description: "Search for reviews where MULTIPLE terms ALL appear in the SAME review. Default mode is AND - all terms must be present. Supports regex patterns when regex=true (e.g., 'berr(y|ies)' for plurals, 'Napa.*Cab' for flexible matching).",
             parameters: {
                 type: "object",
                 properties: {
                     terms: {
                         type: "array",
                         items: { type: "string" },
-                        description: "Array of search terms that must ALL appear in matching reviews. Example: ['breakfast', 'Bali Villa']"
+                        description: "Array of search terms that must ALL appear in matching reviews. Example: ['blackberry', 'tannins', 'California']"
                     },
                     mode: {
                         type: "string",
                         enum: ["AND", "OR"],
-                        description: "AND (default) = ALL terms must appear in the SAME review. OR = matches reviews with ANY term (use for synonyms only)."
+                        description: "AND (default) = ALL terms must appear in the SAME review. OR = matches reviews with ANY term."
                     },
                     limit: {
                         type: "number",
@@ -102,7 +106,7 @@ const TOOLS = [
                     },
                     regex: {
                         type: "boolean",
-                        description: "If true, treat terms as regex patterns. Examples: 'break(fast|fst)' matches typos, 'Bali.*Villa' matches 'Bali Beach Villa'. Default: false"
+                        description: "If true, treat terms as regex patterns. Default: false"
                     }
                 },
                 required: ["terms"]
@@ -113,7 +117,7 @@ const TOOLS = [
         type: "function",
         function: {
             name: "get_topics",
-            description: "Get the cluster topic labels currently visible on the Atlas map. These labels represent the main themes/topics of the reviews in each area of the visualization (e.g., 'amsterdam-museums-tram-hotel', 'breakfast-room-staff-clean'). Use this to understand what topics the user is looking at or to explore the map's content.",
+            description: "Get the cluster topic labels currently visible on the Atlas map. These labels represent the main styles/varietals/regions in each area of the visualization (e.g., 'fruity-rosé-provence', 'bold-tannins-cabernet'). Use this to understand what wines the user is looking at.",
             parameters: {
                 type: "object",
                 properties: {}
@@ -124,7 +128,7 @@ const TOOLS = [
         type: "function",
         function: {
             name: "analyze_cluster",
-            description: "Delegate cluster analysis to a specialized Analyzer Agent. Provide coordinates of a dense cluster (bin_x, bin_y) and optionally the number of reviews to sample. The Analyzer will fetch reviews, analyze them, and return a lightweight summary containing: category label, sentiment, key themes, and representative quotes. This tool does NOT consume your context window - only the summary is returned.",
+            description: "Delegate cluster analysis to a specialized Analyzer Agent. Provide coordinates of a dense cluster (bin_x, bin_y) and optionally the number of reviews to sample. The Analyzer will fetch reviews, analyze them, and return a lightweight summary containing: category label (e.g., 'Earthy Tuscan Reds'), sentiment/quality, flavor notes, and representative quotes. This tool does NOT consume your context window - only the summary is returned.",
             parameters: {
                 type: "object",
                 properties: {
@@ -142,7 +146,7 @@ const TOOLS = [
                     },
                     sample_size: {
                         type: "number",
-                        description: "Number of reviews to analyze (default: 10, max: 80). Increase this when the user explicitly requests more samples (e.g., '20 samples', '50 examples')."
+                        description: "Number of reviews to analyze (default: 10, max: 80). Increase this when the user explicitly requests more samples."
                     }
                 },
                 required: ["bin_x", "bin_y"]
@@ -153,7 +157,7 @@ const TOOLS = [
         type: "function",
         function: {
             name: "save_reviews",
-            description: "Save a collection of verified reviews under a category label for the final answer. Use this AFTER you have confirmed (via analyze_cluster or other tools) that the reviews are relevant to the user's query. The reviews will be displayed as category cards in the UI when you reference them as {{CATEGORY_NAME}}.",
+            description: "Save a collection of verified reviews under a category label for the final answer. Use this AFTER you have confirmed (via analyze_cluster or other tools) that the wines are relevant to the user's query. The reviews will be displayed as category cards in the UI when you reference them as {{CATEGORY_NAME}}.",
             parameters: {
                 type: "object",
                 properties: {
@@ -164,7 +168,7 @@ const TOOLS = [
                     },
                     category: {
                         type: "string",
-                        description: "Category label (e.g., 'Noise Complaints', 'Cleanliness Issues', 'Excellent Service')"
+                        description: "Category label (e.g., 'Budget-Friendly Whites', 'High-Scoring Bordeaux')"
                     }
                 },
                 required: ["review_ids", "category"]
@@ -173,13 +177,19 @@ const TOOLS = [
     }
 ];
 
-const SYSTEM_PROMPT = `You are the **Orchestrator Agent** for exploring TripAdvisor hotel reviews.
-You are capable of autonomous data traversal, strategic planning, and pattern discovery on a 2D semantic map.
+const SYSTEM_PROMPT = `You are the **Wine Expert Agent** (Sommelier AI) for exploring a massive database of wine reviews.
+You are capable of autonomous data traversal, strategic planning, and pattern discovery on a 2D semantic map of wines.
 
 TABLE: reviews
 - __row_index__: Unique identifier (int)
 - description: Review text
-- Rating: 1-5 (int)
+- points: 80-100 (int) - The wine's score (80-84: Good, 85-89: Very Good, 90-94: Outstanding, 95-100: Classic)
+- price: Cost in USD (float)
+- title: Wine name (text)
+- variety: Grape variety (e.g., Pinot Noir, Chardonnay)
+- winery: Winery name
+- country: Country of origin
+- province: Province/State
 - projection_x, projection_y: 2D coordinates (float)
 - neighbors: (json)
 
@@ -189,18 +199,19 @@ Instead, you delegate analysis to a specialized **Analyzer Agent** using the \`a
 
 AGENTIC SEARCH PARADIGM:
 Your workflow for complex queries:
-1. **GLOBAL SCAN**: Find dense clusters across the map using SQL:
+1. **GLOBAL SCAN**: Find dense clusters or potential regions of interest using SQL:
    \`SELECT FLOOR(projection_x/1.0) as bin_x, FLOOR(projection_y/1.0) as bin_y, COUNT(*) as c FROM reviews GROUP BY bin_x, bin_y ORDER BY c DESC LIMIT 10\`
+   (Or filter by WHERE clause if user asks for specific country/variety)
 2. **TRAVERSAL LOOP**:
    a. **Pick a Cluster**: Select a dense cluster from your scan results.
    b. **Delegate Analysis**: Call \`analyze_cluster(bin_x, bin_y)\` to get a summary from the Analyzer Agent.
    c. **Evaluate Relevance**: Does the Analyzer's summary match the user's query?
-   d. **Save if Relevant**: If yes, call \`save_reviews(review_ids, category)\` to bookmark those reviews.
+   d. **Save if Relevant**: If yes, call \`save_reviews(review_ids, category)\` to bookmark those wines.
    e. **Move to Next**: Repeat for other clusters until you have comprehensive coverage.
 3. **FINAL ANSWER**: Synthesize findings. Reference saved categories using {{CATEGORY}} syntax.
 
 AVAILABLE TOOLS:
-- \`sql_query\`: For dense cluster scanning, aggregations, counts
+- \`sql_query\`: For dense cluster scanning, aggregations, counts, price filtering
 - \`analyze_cluster\`: **PREFERRED** for exploring cluster content (delegates to Sub-Agent, lightweight)
   - Default: analyzes 10 reviews per cluster
   - **User preference**: If user asks for specific sample sizes (e.g., "20 samples", "50 examples"), pass the number via \`sample_size\` parameter
@@ -212,10 +223,10 @@ AVAILABLE TOOLS:
 CRITICAL RULES:
 1. **Use analyze_cluster, NOT sql_query, to inspect cluster content**
    - analyze_cluster returns a clean summary without bloating your context
-   - It includes: category, sentiment, themes, quotes, review_ids
+   - It includes: category, quality perception, flavor notes, quotes, review_ids
 2. **Save verified reviews**: After confirming relevance, call \`save_reviews(ids, category)\`
 3. **Reference categories in your answer**: Use {{CATEGORY_NAME}} placeholders
-   - Example: "I found noise issues {{NOISE}} and cleanliness problems {{CLEANLINESS}}"
+   - Example: "I found widely available reds {{Everyday Reds}} and premium collectibles {{Top-Tier Napa}}"
    - The UI will automatically expand these into rich review cards
 4. **Do NOT output raw review text or individual IDs** - only category placeholders
 
@@ -230,17 +241,17 @@ Main findings:
 [Your conclusion]"
 
 CRITICAL: The text inside {{}} must EXACTLY match the category name you used in save_reviews.
-Example: save_reviews([...], "Noise Complaints") → use {{Noise Complaints}} in your answer
+Example: save_reviews([...], "Light & Fruity") → use {{Light & Fruity}} in your answer
 
 EXAMPLES:
-- **Query**: "What are the main complaints?"
+- **Query**: "Find me good value reds under $20"
   **Workflow**:
-  1. sql_query to find top 5 dense clusters
-  2. analyze_cluster(2, 3, sample_size=10) → Returns: {category: "Noise Complaints", sentiment: "Negative", ...}
-  3. save_reviews([101,102,103], "Noise Complaints")  ← Save with this name
-  4. analyze_cluster(-1, 5, sample_size=10) → Returns: {category: "Cleanliness Issues", sentiment: "Negative", ...}
-  5. save_reviews([201,202], "Cleanliness Issues")  ← Save with this name
-  6. **Answer**: "I found two major areas: {{Noise Complaints}} and {{Cleanliness Issues}}"  ← Use EXACT same names
+  1. sql_query: \`SELECT ... FROM reviews WHERE price < 20 AND points >= 87 ...\` (checking clusters)
+  2. analyze_cluster(...) → Returns: {category: "Portuguese Blends", sentiment: "Positive", ...}
+  3. save_reviews(..., "Portuguese Blends")
+  4. analyze_cluster(...) → Returns: {category: "Argentine Malbec", sentiment: "Positive", ...}
+  5. save_reviews(..., "Argentine Malbec")
+  6. **Answer**: "I found great options in {{Portuguese Blends}} using indigenous grapes, and robust {{Argentine Malbec}}."
 
 Remember: You have ~30 steps. Use analyze_cluster to efficiently explore without consuming your context.`;
 
@@ -313,7 +324,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'HTTP-Referer': req.headers.referer as string || req.headers.origin as string || 'https://localhost',
-                'X-Title': 'TripAdvisor Review Atlas Agent'
+                'X-Title': 'Wine Review Atlas Agent'
             },
             body: JSON.stringify({
                 model,

@@ -1,39 +1,20 @@
 # regenerate_static_export.py
-# Generates a new static HTML export of Embedding Atlas with the latest version
-import pandas as pd
-from embedding_atlas import Atlas
+# Copies the processed data to the web-app for deployment
+import shutil
 import os
 
-# Load the data
+# Paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(current_dir, 'reviews_projected.parquet')
-df = pd.read_parquet(file_path)
+source_file = os.path.join(current_dir, 'winemag_projected.parquet')
+target_dir = os.path.join(current_dir, '..', 'web-app', 'public', 'atlas', 'data')
+target_file = os.path.join(target_dir, 'dataset.parquet')
 
-print(f"Loaded {len(df)} rows")
-print(f"Columns: {df.columns.tolist()}")
+# Ensure target directory exists
+os.makedirs(target_dir, exist_ok=True)
 
-# Create the Atlas
-atlas = Atlas(
-    df,
-    text="description",
-    x="projection_x",
-    y="projection_y",
-    neighbors="neighbors"
-)
+# Copy file
+print(f"Copying data from {source_file}...")
+shutil.copy2(source_file, target_file)
 
-# Export to HTML
-html_content = atlas.export_html()
-
-# Write to the web-app public folder
-output_dir = os.path.join(current_dir, '..', 'web-app', 'public', 'atlas')
-os.makedirs(output_dir, exist_ok=True)
-
-# The export_html() returns a full HTML document
-# We need to save it properly
-output_path = os.path.join(output_dir, 'index.html')
-
-with open(output_path, 'w', encoding='utf-8') as f:
-    f.write(html_content)
-
-print(f"Static export saved to: {output_path}")
-print("Done!")
+print(f"Data copied to: {target_file}")
+print("Ready for web app deployment!")

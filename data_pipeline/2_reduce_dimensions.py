@@ -17,8 +17,8 @@ print("="*60)
 
 # Configuration
 N_NEIGHBORS = 15
-UMAP_N_EPOCHS = 600
-UMAP_MIN_DIST = 0.2
+UMAP_N_EPOCHS = None
+UMAP_MIN_DIST = 0.1
 
 # Load embeddings
 print("\n[1/6] Loading embeddings...")
@@ -38,16 +38,22 @@ embeddings = np.load(file_path)
 print(f"✅ Loaded embeddings: {embeddings.shape}")
 
 # Load data
+# Load data
 print("\n[2/6] Loading review data...")
-csv_path = 'reviews_clean.csv'
-if not os.path.exists(csv_path):
-    if os.path.exists('data_pipeline/reviews_clean.csv'):
-        csv_path = 'data_pipeline/reviews_clean.csv'
+# Check in same directory as script first
+script_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(script_dir, 'winemag_clean.csv')
 
-df = pd.read_csv(csv_path)
 if not os.path.exists(csv_path):
-    if os.path.exists('data_pipeline/reviews_clean.csv'):
-        csv_path = 'data_pipeline/reviews_clean.csv'
+    # Fallback to current dir
+    if os.path.exists('winemag_clean.csv'):
+        csv_path = 'winemag_clean.csv'
+
+if not os.path.exists(csv_path):
+    print(f"❌ winemag_clean.csv not found!")
+    print(f"   Searched in: {script_dir}")
+    print("   Please run 1_generate_embeddings.py first")
+    exit(1)
 
 df = pd.read_csv(csv_path)
 print(f"✅ Loaded data: {len(df)} rows")
@@ -220,11 +226,17 @@ print(f"   Mean local distance (high-D): {mean_local_dist_high:.4f}")
 print(f"   Mean local distance (low-D):  {mean_local_dist_low:.4f}")
 
 # 6. Silhouette Score (if labels exist)
-if 'Rating' in df.columns:
-    print("\n6️⃣ Silhouette Score (cluster quality by rating)")
+target_col = None
+if 'points' in df.columns:
+    target_col = 'points'
+elif 'Rating' in df.columns:
+    target_col = 'Rating'
+
+if target_col:
+    print(f"\n6️⃣ Silhouette Score (cluster quality by {target_col})")
     print("   Range: [-1, 1], Higher is better (>0.5 is good)")
     
-    sample_ratings = df['Rating'].iloc[:sample_size].values
+    sample_ratings = df[target_col].iloc[:sample_size].values
     if len(np.unique(sample_ratings)) > 1:
         silhouette = silhouette_score(sample_projections, sample_ratings, metric='euclidean')
         print(f"   Score: {silhouette:.4f}")
@@ -265,9 +277,10 @@ metrics_dict = {
     'total_size': len(embeddings)
 }
 
+output_metrics_path = os.path.join(script_dir, 'projection_quality_metrics.csv')
 metrics_df = pd.DataFrame([metrics_dict])
-metrics_df.to_csv('projection_quality_metrics.csv', index=False)
-print("\n✅ Metrics saved to: projection_quality_metrics.csv")
+metrics_df.to_csv(output_metrics_path, index=False)
+print(f"\n✅ Metrics saved to: {output_metrics_path}")
 
 # Save projection data
 print("\n[6/6] Saving projected data...")
@@ -276,10 +289,11 @@ print("\n[6/6] Saving projected data...")
 print("Adding __row_index__ column...")
 df['__row_index__'] = np.arange(len(df), dtype=np.int32)
 
-df.to_parquet('reviews_projected.parquet', index=False, engine='pyarrow')
+output_parquet_path = os.path.join(script_dir, 'winemag_projected.parquet')
+df.to_parquet(output_parquet_path, index=False, engine='pyarrow')
 
-file_size_mb = os.path.getsize('reviews_projected.parquet') / (1024 * 1024)
-print(f"✅ Saved: reviews_projected.parquet ({file_size_mb:.2f} MB)")
+file_size_mb = os.path.getsize(output_parquet_path) / (1024 * 1024)
+print(f"✅ Saved: {output_parquet_path} ({file_size_mb:.2f} MB)")
 
 print("\n" + "="*60)
 print("✅ Step 2 Complete!")

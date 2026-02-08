@@ -201,7 +201,7 @@ export class ToolExecutor {
         const safeLimit = Math.min(Math.max(1, limit || 10), 50);
 
         const sql = `
-      SELECT __row_index__, Rating, description
+      SELECT __row_index__, points, description, title, price
       FROM reviews
       WHERE description ILIKE '%${escapedQuery}%'
       LIMIT ${safeLimit}
@@ -228,7 +228,9 @@ export class ToolExecutor {
                 total_matches: totalMatches,
                 reviews: rows.map(r => ({
                     id: r.__row_index__,
-                    rating: r.Rating,
+                    points: r.points,
+                    title: r.title,
+                    price: r.price,
                     excerpt: r.description?.length > 300
                         ? r.description.substring(0, 300) + '...'
                         : r.description
@@ -246,14 +248,14 @@ export class ToolExecutor {
     ): Promise<ToolResult> {
         // Get basic stats
         const statsResult = await this.coordinator.query(
-            'SELECT COUNT(*) as total, AVG(Rating) as avg_rating, MIN(Rating) as min_rating, MAX(Rating) as max_rating FROM reviews'
+            'SELECT COUNT(*) as total, AVG(points) as avg_points, MIN(points) as min_points, MAX(points) as max_points, AVG(price) as avg_price FROM reviews'
         );
         const stats = statsResult.toArray()[0];
 
         let distribution = null;
         if (includeDistribution) {
             const distResult = await this.coordinator.query(
-                'SELECT Rating, COUNT(*) as count FROM reviews GROUP BY Rating ORDER BY Rating'
+                'SELECT points, COUNT(*) as count FROM reviews GROUP BY points ORDER BY points'
             );
             distribution = distResult.toArray();
         }
@@ -263,27 +265,34 @@ export class ToolExecutor {
             call_id: callId,
             result: {
                 total_reviews: Number(stats.total),
-                average_rating: Number(stats.avg_rating).toFixed(2),
-                min_rating: stats.min_rating,
-                max_rating: stats.max_rating,
-                rating_distribution: distribution
+                average_points: Number(stats.avg_points).toFixed(2),
+                min_points: stats.min_points,
+                max_points: stats.max_points,
+                average_price: stats.avg_price ? Number(stats.avg_price).toFixed(2) : 'N/A',
+                points_distribution: distribution
             }
         };
     }
 
     /**
-     * Get a sample of reviews, optionally filtered by rating
-     */
+    * Get a sample of reviews, optionally filtered by points
+    */
     private async getSample(
         callId: string,
         count: number = 5,
-        ratingFilter?: number
+        min_points?: number,
+        max_points?: number
     ): Promise<ToolResult> {
         const safeCount = Math.min(Math.max(1, count || 5), 20);
 
-        let sql = 'SELECT __row_index__, Rating, description FROM reviews';
-        if (ratingFilter && ratingFilter >= 1 && ratingFilter <= 5) {
-            sql += ` WHERE Rating = ${Math.floor(ratingFilter)}`;
+        let sql = 'SELECT __row_index__, points, description, title, price FROM reviews';
+        const conditions: string[] = [];
+
+        if (min_points !== undefined) conditions.push(`points >= ${Math.floor(min_points)}`);
+        if (max_points !== undefined) conditions.push(`points <= ${Math.floor(max_points)}`);
+
+        if (conditions.length > 0) {
+            sql += ' WHERE ' + conditions.join(' AND ');
         }
         sql += ` ORDER BY RANDOM() LIMIT ${safeCount}`;
 
@@ -295,10 +304,12 @@ export class ToolExecutor {
             call_id: callId,
             result: {
                 sample_size: rows.length,
-                filter: ratingFilter ? `Rating = ${ratingFilter}` : 'none',
+                filter: conditions.length > 0 ? conditions.join(' AND ') : 'none',
                 reviews: rows.map(r => ({
                     id: r.__row_index__,
-                    rating: r.Rating,
+                    points: r.points,
+                    title: r.title,
+                    price: r.price,
                     text: r.description
                 }))
             }
@@ -357,7 +368,7 @@ export class ToolExecutor {
 
         // Query with matching reviews
         const sql = `
-            SELECT __row_index__, Rating, description
+            SELECT __row_index__, points, description, title, price
             FROM reviews
             WHERE ${whereClause}
             LIMIT ${safeLimit}
@@ -425,7 +436,9 @@ export class ToolExecutor {
                 term_breakdown: termCounts,
                 reviews: rows.map(r => ({
                     id: r.__row_index__,
-                    rating: r.Rating,
+                    points: r.points,
+                    title: r.title,
+                    price: r.price,
                     excerpt: r.description?.length > 300
                         ? r.description.substring(0, 300) + '...'
                         : r.description
@@ -488,7 +501,7 @@ export class ToolExecutor {
 
         // Fetch reviews from the specified bin
         const sql = `
-            SELECT __row_index__, Rating, description
+            SELECT __row_index__, points, description, title, price
             FROM reviews
             WHERE FLOOR(projection_x/${bin_size}) = ${Math.floor(bin_x)}
               AND FLOOR(projection_y/${bin_size}) = ${Math.floor(bin_y)}
@@ -501,7 +514,8 @@ export class ToolExecutor {
             const rows = result.toArray();
             reviews = rows.map(r => ({
                 id: r.__row_index__,
-                rating: r.Rating,
+                points: r.points,
+                title: r.title,
                 text: r.description
             }));
         } catch (error) {
@@ -519,11 +533,11 @@ export class ToolExecutor {
                 call_id: callId,
                 result: {
                     category: 'Empty Cluster',
-                    sentiment: 'Mixed',
+                    sentiment: 'N/A',
                     themes: [],
                     quotes: [],
                     count: 0,
-                    avg_rating: 0,
+                    avg_points: 0,
                     review_ids: [],
                     bin_x,
                     bin_y
@@ -600,13 +614,13 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "sql_query",
-            description: "Execute a SQL SELECT query on the hotel reviews table. The table 'reviews' has columns: __row_index__ (int), description (text - the review content), Rating (int 1-5), projection_x (float), projection_y (float), neighbors (json). Use this for aggregations, counts, filtering, and complex queries.",
+            description: "Execute a SQL SELECT query on the wine reviews table. The table 'reviews' has columns: __row_index__ (int), description (text), points (int 80-100 - score), price (float - cost), title (text - wine name), variety (text - grape), winery (text), country (text), province (text), region_1 (text), projection_x (float), projection_y (float), neighbors (json). Use this for aggregations, counts, filtering, and complex queries.",
             parameters: {
                 type: "object",
                 properties: {
                     query: {
                         type: "string",
-                        description: "SQL SELECT query to execute. Examples: 'SELECT Rating, COUNT(*) FROM reviews GROUP BY Rating', 'SELECT AVG(Rating) FROM reviews', 'SELECT COUNT(*) FROM reviews WHERE Rating >= 4'"
+                        description: "SQL SELECT query to execute. Examples: 'SELECT points, COUNT(*) FROM reviews GROUP BY points', 'SELECT AVG(price) FROM reviews WHERE country = ''France''', 'SELECT * FROM reviews WHERE variety = ''Pinot Noir'' AND points >= 95'"
                     }
                 },
                 required: ["query"]
@@ -617,13 +631,13 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "text_search",
-            description: "Search for reviews containing specific keywords or phrases. Use this to find reviews mentioning topics like 'breakfast', 'pool', 'noise', 'staff', 'clean', etc.",
+            description: "Search for wine reviews containing specific keywords or phrases. Use this to find wines with specific notes like 'blackberry', 'oak', 'citrus', 'leather', 'tannins', etc.",
             parameters: {
                 type: "object",
                 properties: {
                     query: {
                         type: "string",
-                        description: "Keyword or phrase to search for in review text"
+                        description: "Keyword or phrase to search for in review description"
                     },
                     limit: {
                         type: "number",
@@ -638,13 +652,13 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "get_stats",
-            description: "Get overall statistics for the reviews dataset including total count, average rating, and rating distribution.",
+            description: "Get overall statistics for the wine dataset including total count, average points, and price distribution.",
             parameters: {
                 type: "object",
                 properties: {
-                    include_rating_distribution: {
+                    include_points_distribution: {
                         type: "boolean",
-                        description: "Whether to include breakdown by star rating (1-5)"
+                        description: "Whether to include breakdown by points (80-100)"
                     }
                 }
             }
@@ -654,7 +668,7 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "get_sample",
-            description: "Get a random sample of reviews to understand the data. Useful for getting examples of reviews with specific ratings.",
+            description: "Get a random sample of reviews to understand the data. Useful for getting examples of wines with specific scores.",
             parameters: {
                 type: "object",
                 properties: {
@@ -662,9 +676,13 @@ export const TOOL_DEFINITIONS = [
                         type: "number",
                         description: "Number of sample reviews to retrieve (default: 5, max: 20)"
                     },
-                    rating_filter: {
+                    min_points: {
                         type: "number",
-                        description: "Optional: only get reviews with this star rating (1-5)"
+                        description: "Optional: minimum score (80-100)"
+                    },
+                    max_points: {
+                        type: "number",
+                        description: "Optional: maximum score (80-100)"
                     }
                 }
             }
@@ -674,27 +692,27 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "flexible_search",
-            description: "Search for reviews where MULTIPLE terms ALL appear in the SAME review. Default mode is AND - all terms must be present in each matching review. Example: terms=['breakfast', 'Bali Villa'] finds only reviews mentioning BOTH 'breakfast' AND 'Bali Villa' together. Returns individual term counts to explain data availability.",
+            description: "Search for reviews where MULTIPLE terms ALL appear in the SAME review. Default mode is AND - all terms must be present. Supports regex patterns when regex=true (e.g., 'berr(y|ies)' for plurals, 'Napa.*Cab' for flexible matching).",
             parameters: {
                 type: "object",
                 properties: {
                     terms: {
                         type: "array",
                         items: { type: "string" },
-                        description: "Array of search terms that must ALL appear in matching reviews. Example: ['breakfast', 'Bali Villa']"
+                        description: "Array of search terms that must ALL appear in matching reviews. Example: ['blackberry', 'tannins', 'California']"
                     },
                     mode: {
                         type: "string",
                         enum: ["AND", "OR"],
-                        description: "AND (default) = ALL terms must appear in the SAME review. OR = matches reviews with ANY term (use for synonyms only)."
+                        description: "AND (default) = ALL terms must appear in the SAME review. OR = matches reviews with ANY term."
                     },
                     limit: {
                         type: "number",
-                        description: "Maximum results to return (default: 15, max: 50)"
+                        description: "Maximum results (default: 15, max: 50)"
                     },
                     regex: {
                         type: "boolean",
-                        description: "If true, treat terms as regex patterns. Examples: 'break(fast|fst)' matches typos, 'Bali.*Villa' matches 'Bali Beach Villa'. Default: false"
+                        description: "If true, treat terms as regex patterns. Default: false"
                     }
                 },
                 required: ["terms"]
@@ -705,7 +723,7 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "get_topics",
-            description: "Get the cluster topic labels currently visible on the Atlas map. These labels represent the main themes/topics of the reviews in each area of the visualization. Labels are auto-generated based on review content and change dynamically based on zoom level and viewport position.",
+            description: "Get the cluster topic labels currently visible on the Atlas map. These labels represent the main styles/varietals/regions in each area of the visualization (e.g., 'fruity-rosé-provence', 'bold-tannins-cabernet'). Use this to understand what wines the user is looking at.",
             parameters: {
                 type: "object",
                 properties: {}
@@ -716,7 +734,7 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "analyze_cluster",
-            description: "Delegate cluster analysis to a specialized Analyzer Agent. Provide coordinates of a dense cluster (bin_x, bin_y) and optionally the number of reviews to sample. The Analyzer will fetch reviews, analyze them, and return a lightweight summary containing: category label, sentiment, key themes, and representative quotes. This tool does NOT consume your context window - only the summary is returned.",
+            description: "Delegate cluster analysis to a specialized Analyzer Agent. Provide coordinates of a dense cluster (bin_x, bin_y) and optionally the number of reviews to sample. The Analyzer will fetch reviews, analyze them, and return a lightweight summary containing: category label (e.g., 'Earthy Tuscan Reds'), sentiment/quality, flavor notes, and representative quotes. This tool does NOT consume your context window - only the summary is returned.",
             parameters: {
                 type: "object",
                 properties: {
@@ -734,7 +752,7 @@ export const TOOL_DEFINITIONS = [
                     },
                     sample_size: {
                         type: "number",
-                        description: "Number of reviews to analyze (default: 10, max: 80). Use higher values when user explicitly requests more samples."
+                        description: "Number of reviews to analyze (default: 10, max: 80). Increase this when the user explicitly requests more samples."
                     }
                 },
                 required: ["bin_x", "bin_y"]
@@ -745,7 +763,7 @@ export const TOOL_DEFINITIONS = [
         type: "function" as const,
         function: {
             name: "save_reviews",
-            description: "Save a collection of verified reviews under a category label for the final answer. Use this AFTER you have confirmed (via analyze_cluster or other tools) that the reviews are relevant to the user's query. The reviews will be displayed as category cards in the UI when you reference them as {{CATEGORY_NAME}}.",
+            description: "Save a collection of verified reviews under a category label for the final answer. Use this AFTER you have confirmed (via analyze_cluster or other tools) that the wines are relevant to the user's query. The reviews will be displayed as category cards in the UI when you reference them as {{CATEGORY_NAME}}.",
             parameters: {
                 type: "object",
                 properties: {
@@ -756,7 +774,7 @@ export const TOOL_DEFINITIONS = [
                     },
                     category: {
                         type: "string",
-                        description: "Category label (e.g., 'Noise Complaints', 'Cleanliness Issues', 'Excellent Service')"
+                        description: "Category label (e.g., 'Budget-Friendly Whites', 'High-Scoring Bordeaux')"
                     }
                 },
                 required: ["review_ids", "category"]

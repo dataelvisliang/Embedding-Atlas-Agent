@@ -19,7 +19,7 @@ MODEL_ID = "qwen/qwen3-embedding-4b"
 # I'll implement the script to use the embedding endpoint.
 
 API_URL = "https://openrouter.ai/api/v1/embeddings"
-BATCH_SIZE = 20 # Conservative batch size for API
+BATCH_SIZE = 50 # Increased batch size slightly for efficiency
 
 # Load API Key
 env_path = os.path.join(os.path.dirname(__file__), '../web-app/.env')
@@ -31,23 +31,23 @@ if os.path.exists(env_path):
                 break
 else:
     print("❌ .env file not found!")
-    exit(1)
+    # API_KEY = "dummy_key" # Uncomment for testing without key if needed
 
 print(f"✅ Loaded API Key (starts with {API_KEY[:4]}...)")
 
 # Load data
-print("\n[1/2] Loading TripAdvisor reviews...")
+print("\n[1/2] Loading WineMag reviews...")
 
 # Check in same directory as script first
 script_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(script_dir, 'tripadvisor_hotel_reviews.csv')
+csv_path = os.path.join(script_dir, 'winemag-data-130k-v2.csv')
 
 # If not found, check parent directory
 if not os.path.exists(csv_path):
-    csv_path = os.path.join(script_dir, '..', 'tripadvisor_hotel_reviews.csv')
+    csv_path = os.path.join(script_dir, '..', 'winemag-data-130k-v2.csv')
 
 if not os.path.exists(csv_path):
-    print(f"❌ tripadvisor_hotel_reviews.csv not found!")
+    print(f"❌ winemag-data-130k-v2.csv not found!")
     print(f"   Searched in: {script_dir}")
     print(f"   And in: {os.path.abspath(os.path.join(script_dir, '..'))}")
     exit(1)
@@ -55,37 +55,11 @@ if not os.path.exists(csv_path):
 df = pd.read_csv(csv_path)
 
 # Clean data
-df = df.dropna(subset=['Review']).copy()
-df = df[df['Review'].str.strip() != ''].copy()
+df = df.dropna(subset=['description']).copy()
+df = df[df['description'].str.strip() != ''].copy()
 df = df.reset_index(drop=True)
 
-# Rename Review to description to match existing parquet schema
-df = df.rename(columns={'Review': 'description'})
-
-# Add metadata columns to match existing parquet schema
-print("Adding metadata columns to match existing parquet...")
-import random
-import numpy as np
-
-np.random.seed(42)
-random.seed(42)
-
-# Generate random metadata for each review
-review_dates = [f"2024-{random.choice(['01','02','03','04','05','06','07','08','09','10','11','12'])}" for _ in range(len(df))]
-hotel_types = np.random.choice(['Business', 'Leisure', 'Family', 'Budget', 'Luxury'], len(df))
-sentiments = np.random.choice(['Positive', 'Negative', 'Neutral'], len(df))
-review_lengths = np.random.choice(['Short', 'Medium', 'Long'], len(df))
-has_complaints = np.random.choice(['Yes', 'No'], len(df))
-mentions_staff = np.random.choice(['Yes', 'No'], len(df))
-mentions_price = np.random.choice(['Yes', 'No'], len(df))
-
-df['review_date'] = review_dates
-df['hotel_type'] = hotel_types
-df['sentiment'] = sentiments
-df['review_length'] = review_lengths
-df['has_complaint'] = has_complaints
-df['mentions_staff'] = mentions_staff
-df['mentions_price'] = mentions_price
+# 'description' is already the correct column name, no rename needed.
 
 total_reviews = len(df)
 print(f"✅ Loaded {total_reviews:,} reviews")
@@ -181,10 +155,11 @@ print(f"   Shape: {embeddings_normalized.shape}")
 output_path = os.path.join(os.path.dirname(__file__), 'embeddings.npy')
 print(f"\nSaving to {output_path}...")
 np.save(output_path, embeddings_normalized)
-df.to_csv(os.path.join(os.path.dirname(__file__), 'reviews_clean.csv'), index=False)
+df.to_csv(os.path.join(os.path.dirname(__file__), 'winemag_clean.csv'), index=False)
 
 print("\n" + "="*60)
 print("✅ Step 1 Complete!")
 print("="*60)
 print(f"Saved: embeddings.npy")
+print(f"Saved: winemag_clean.csv")
 print(f"\n🚀 Next: run 2_reduce_dimensions.py")

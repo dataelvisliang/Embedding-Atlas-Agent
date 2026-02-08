@@ -24,16 +24,16 @@ export interface AgentState {
 
 const INITIAL_MESSAGE: Message = {
     role: 'assistant',
-    content: `Hello! I'm your AI data analyst for TripAdvisor reviews.
+    content: `Hello! I'm your AI Sommelier and Wine Data Analyst.
 
-I can help you explore the dataset by:
+I can help you explore the wine reviews dataset by:
 
-- **Searching** for reviews mentioning specific topics (breakfast, pool, noise, etc.)
-- **Analyzing** ratings, distributions, and trends
-- **Finding** examples of positive or negative reviews
-- **Answering** questions about the data
+- **Searching** for wines with specific notes (blackberry, oak, tannins, etc.)
+- **Analyzing** scores, price trends, and regional characteristics
+- **Finding** examples of high-scoring or good value wines
+- **Answering** questions about varietals and styles
 
-Try asking: "What's the rating distribution?" or "What do people say about breakfast?"`
+Try asking: "Find me good value reds under $20" or "What are the common flavors in Tuscan wines?"`
 };
 
 /**
@@ -151,10 +151,12 @@ export function useAgentChat(coordinator: Coordinator | null) {
 
                 for (let i = 0; i < selectedPoints.length; i++) {
                     const p = selectedPoints[i];
-                    const rating = p.fields?.Rating ?? 'N/A';
+                    // Updated to use points instead of Rating
+                    const points = p.fields?.points ?? p.fields?.Rating ?? 'N/A'; 
+                    const title = p.fields?.title ?? 'Unknown Wine';
                     const description = p.fields?.description ?? p.text ?? 'No description';
 
-                    const reviewText = `[Review ${i + 1}] Rating: ${rating}★\n${description}`;
+                    const reviewText = `[Review ${i + 1}] Points: ${points} | Title: ${title}\n${description}`;
 
                     // Check if adding this review would exceed the limit
                     if (totalChars + reviewText.length + 4 > MAX_CONTEXT_CHARS - HEADER_RESERVE) {
@@ -171,22 +173,23 @@ export function useAgentChat(coordinator: Coordinator | null) {
 
                 // Calculate statistics from included reviews
                 const includedPoints = selectedPoints.slice(0, reviewsIncluded);
-                const ratings = includedPoints
-                    .map((p: any) => p.fields?.Rating)
+                const scores = includedPoints
+                    .map((p: any) => p.fields?.points ?? p.fields?.Rating)
                     .filter((r: any): r is number => typeof r === 'number');
 
-                const avgRating = ratings.length > 0
-                    ? (ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length).toFixed(2)
+                const avgScore = scores.length > 0
+                    ? (scores.reduce((a: number, b: number) => a + b, 0) / scores.length).toFixed(1)
                     : 'N/A';
 
-                const ratingCounts = ratings.reduce((acc: Record<number, number>, r: number) => {
+                const scoreCounts = scores.reduce((acc: Record<number, number>, r: number) => {
                     acc[r] = (acc[r] || 0) + 1;
                     return acc;
                 }, {} as Record<number, number>);
 
-                const distributionText = Object.entries(ratingCounts)
+                const distributionText = Object.entries(scoreCounts)
                     .sort(([a], [b]) => Number(b) - Number(a))
-                    .map(([rating, count]) => `${rating}★: ${count}`)
+                    .slice(0, 10) // Only show top 10 most common scores to save space
+                    .map(([score, count]) => `${score}: ${count}`)
                     .join(', ');
 
                 const truncatedNote = reviewsIncluded < totalSelected
@@ -205,8 +208,8 @@ They are asking about THIS SPECIFIC SUBSET, not the entire dataset.
 **Selection Statistics:**
 - Total selected: ${totalSelected} reviews
 - Reviews shown below: ${reviewsIncluded}
-- Average rating (of shown): ${avgRating}★
-- Rating distribution (of shown): ${distributionText || 'N/A'}
+- Average score (of shown): ${avgScore}
+- Score distribution (of shown): ${distributionText || 'N/A'}
 ${truncatedNote}
 ${predicateInfo}
 
@@ -218,7 +221,7 @@ ${reviewsList}
 1. Answer based on the selected reviews shown above
 2. You CAN USE TOOLS (sql_query, text_search) to query the FULL selection of ${totalSelected} reviews:
    - For sql_query: Include the WHERE clause shown above to filter to selected reviews
-   - Example: \`SELECT AVG(Rating) FROM reviews WHERE ${selectionPredicate || '[predicate]'}\`
+   - Example: \`SELECT AVG(points) FROM reviews WHERE ${selectionPredicate || '[predicate]'}\`
 3. USE tools when the user asks for:
    - Exact counts, averages, or statistics across all selected reviews
    - Keyword searches within the selection
@@ -327,7 +330,7 @@ ${reviewsList}
                                             sentiment: analyzerData.sentiment,
                                             themes: analyzerData.themes,
                                             quotes: analyzerData.quotes,
-                                            avg_rating: analyzerData.avg_rating,
+                                            avg_points: analyzerData.avg_points, // Updated from avg_rating
                                             review_ids: matchingIds,
                                             reviews: analyzerData.reviews || [], // Full reviews array from analyzer
                                             bin_x: analyzerData.bin_x,

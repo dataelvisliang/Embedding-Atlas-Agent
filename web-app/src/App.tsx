@@ -59,7 +59,7 @@ function App() {
         console.log("[Selection] Total selected:", totalCount);
 
         // Fetch more reviews - we'll truncate based on token limit in useAgentChat
-        const query = `SELECT __row_index__ as identifier, Rating, description FROM reviews WHERE ${selectionPredicate} LIMIT 500`;
+        const query = `SELECT __row_index__ as identifier, points, title, price, description FROM reviews WHERE ${selectionPredicate} LIMIT 500`;
         console.log("[Selection] Querying sample:", query);
 
         const result = await coordinatorReady.query(query);
@@ -71,7 +71,9 @@ function App() {
           identifier: r.identifier,
           text: r.description,
           fields: {
-            Rating: r.Rating,
+            points: r.points,
+            title: r.title,
+            price: r.price,
             description: r.description
           }
         }));
@@ -208,6 +210,9 @@ function App() {
             embeddingViewConfig={{
               pointSize: 3,
             }}
+            defaultChartsConfig={{
+              table: false
+            }}
             highlight={highlightIds}
             initialState={{ version: "0.0.0", timestamp: Date.now() }}
             onStateChange={(state) => {
@@ -342,7 +347,7 @@ function App() {
                                   </div>
                                   <div style={{ fontSize: '12px', opacity: 0.7, marginBottom: '12px' }}>
                                     <span style={{ marginRight: '12px' }}>Sentiment: {data.sentiment}</span>
-                                    <span style={{ marginRight: '12px' }}>Avg Rating: {data.avg_rating}★</span>
+                                    <span style={{ marginRight: '12px' }}>Avg Points: {data.avg_points || data.avg_rating}</span>
                                     <span>Samples: {reviews.length}</span>
                                   </div>
                                   {data.themes && data.themes.length > 0 && (
@@ -366,7 +371,8 @@ function App() {
                                             fontSize: '12px'
                                           }}>
                                             <div style={{ fontWeight: 'bold', marginBottom: '4px', opacity: 0.6 }}>
-                                              Review #{idx + 1} - Rating: {review.rating || review.Rating}★
+                                              {review.title ? <span style={{display: 'block', marginBottom: '4px'}}>{review.title}</span> : null}
+                                              Review #{idx + 1} - Points: {review.points || review.rating || review.Rating}
                                             </div>
                                             <div style={{ opacity: 0.85, lineHeight: '1.5' }}>
                                               {review.text || review.description || review.excerpt}
@@ -448,7 +454,7 @@ function App() {
 
             <div className="chat-input-area">
               <textarea
-                placeholder={isLoading ? "Analyzing..." : "Ask about ratings, topics, trends... (Shift+Enter for new line)"}
+                placeholder={isLoading ? "Analyzing..." : "Ask about wines, flavors, prices... (Shift+Enter for new line)"}
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);

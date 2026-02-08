@@ -2,23 +2,23 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-const ANALYZER_SYSTEM_PROMPT = `You are a specialized Review Analyzer Agent.
+const ANALYZER_SYSTEM_PROMPT = `You are a specialized Wine Review Analyzer Agent.
 
-Your task is to analyze a set of hotel reviews and extract:
-1. **Category/Theme**: A concise label (2-3 words) describing the main topic (e.g., "Cleanliness Issues", "Noise Complaints", "Excellent Service")
-2. **Sentiment**: Overall sentiment (Positive, Negative, or Mixed)
-3. **Key Themes**: List of 2-5 specific sub-themes found in the reviews
-4. **Top Quotes**: Extract 2-3 representative short quotes (max 100 chars each) that best illustrate the category
+Your task is to analyze a set of wine reviews and extract:
+1. **Category/Theme**: A concise label (2-3 words) describing the main varietal, style, or region (e.g., "Tuscan Sangiovese", "Napa Cabernet", "Crisp White")
+2. **Quality Perception**: Overall impression of quality (Excellent, Good, Mediocre)
+3. **Flavor Notes**: List of 2-5 specific flavor notes or characteristics found in the reviews (e.g., "cherry", "oak", "earthy", "high tannins")
+4. **Top Quotes**: Extract 2-3 representative short quotes (max 100 chars each) that best describe the wine's character
 
 Output your analysis as JSON:
 {
   "category": "...",
-  "sentiment": "Positive|Negative|Mixed",
-  "themes": ["theme1", "theme2", ...],
+  "sentiment": "Excellent|Good|Mediocre",
+  "themes": ["note1", "note2", ...],
   "quotes": ["quote1", "quote2", "quote3"]
 }
 
-Be precise and data-driven. The category should be actionable and specific.`;
+Be precise and data-driven. The category should be informative.`;
 
 interface AnalyzerRequest {
     bin_x: number;
@@ -29,11 +29,11 @@ interface AnalyzerRequest {
 
 interface AnalyzerResponse {
     category: string;
-    sentiment: 'Positive' | 'Negative' | 'Mixed';
+    sentiment: string;
     themes: string[];
     quotes: string[];
     count: number;
-    avg_rating: number;
+    avg_points: number;
     review_ids: number[];
     bin_x: number;
     bin_y: number;
@@ -81,11 +81,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (reviews.length === 0) {
             return res.status(200).json({
                 category: 'Empty Cluster',
-                sentiment: 'Mixed',
+                sentiment: 'N/A',
                 themes: [],
                 quotes: [],
                 count: 0,
-                avg_rating: 0,
+                avg_points: 0,
                 review_ids: [],
                 bin_x,
                 bin_y
@@ -93,14 +93,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Calculate stats
-        const ratings = reviews.map((r: any) => r.rating || r.Rating).filter((r: any) => typeof r === 'number');
-        const avg_rating = ratings.length > 0
-            ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+        const points = reviews.map((r: any) => r.points || r.rating || r.Rating).filter((r: any) => typeof r === 'number');
+        const avg_points = points.length > 0
+            ? points.reduce((a: number, b: number) => a + b, 0) / points.length
             : 0;
 
         // Format reviews for LLM
         const reviewsText = reviews.map((r: any, idx: number) =>
-            `[${idx + 1}] Rating: ${r.rating || r.Rating}★\n${r.text || r.description || r.excerpt}`
+            `[${idx + 1}] Points: ${r.points || r.rating || r.Rating}\nTitle: ${r.title || 'Unknown'}\n${r.text || r.description || r.excerpt}`
         ).join('\n\n');
 
         // Call Analyzer Agent (LLM)
@@ -112,7 +112,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'HTTP-Referer': req.headers.referer as string || req.headers.origin as string || 'https://localhost',
-                'X-Title': 'Review Analyzer Agent'
+                'X-Title': 'Wine Review Analyzer Agent'
             },
             body: JSON.stringify({
                 model,
@@ -151,20 +151,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error('[Analyzer] Failed to parse LLM JSON:', content);
             // Fallback: create a basic analysis
             analysis = {
-                category: 'General Reviews',
-                sentiment: avg_rating >= 3.5 ? 'Positive' : 'Negative',
-                themes: ['Various topics'],
+                category: 'General Wines',
+                sentiment: avg_points >= 88 ? 'Excellent' : 'Good',
+                themes: ['Various Styles'],
                 quotes: []
             };
         }
 
         const response: AnalyzerResponse = {
             category: analysis.category || 'Unknown',
-            sentiment: analysis.sentiment || 'Mixed',
+            sentiment: analysis.sentiment || 'Good',
             themes: analysis.themes || [],
             quotes: analysis.quotes || [],
             count: reviews.length,
-            avg_rating: Math.round(avg_rating * 10) / 10,
+            avg_points: Math.round(avg_points * 10) / 10,
             review_ids: reviews.map((r: any) => r.id || r.__row_index__).filter((id: any) => id !== undefined),
             bin_x,
             bin_y
