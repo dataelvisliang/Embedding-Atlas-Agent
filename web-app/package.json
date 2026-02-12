@@ -14,7 +14,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dataelvisliang/embedding-atlas": "^0.16.1-highlight.0",
+    "@dataelvisliang/embedding-atlas": "^0.17.0-highlight.0",
     "@duckdb/duckdb-wasm": "^1.33.1-dev18.0",
     "@uwdata/mosaic-core": "^0.21.1",
     "@uwdata/mosaic-duckdb": "^0.21.1",
