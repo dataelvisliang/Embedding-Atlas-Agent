@@ -326,6 +326,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             ...messages
         ];
 
+        // Create an AbortController to handle client disconnects
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout safety
+
+        // Listen for client disconnect to abort the upstream request
+        req.on('close', () => {
+            console.log('[Agent] Client disconnected, aborting upstream request');
+            controller.abort();
+            clearTimeout(timeout);
+        });
+
         // If we have tool results, add them as tool response messages
         if (toolResults && toolResults.length > 0) {
             for (const result of toolResults) {
@@ -337,7 +348,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
-        console.log(`[Agent] Sending ${apiMessages.length} messages to ${model}`);
+        console.log(`[Agent] Sending ${apiMessages.length} messages to ${model} (Streaming)`);
 
         const response = await fetch(OPENROUTER_API_URL, {
             method: 'POST',
@@ -352,14 +363,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 messages: apiMessages,
                 tools: TOOLS,
                 tool_choice: 'auto'
-            })
+            }),
+            signal: controller.signal
         });
 
+        clearTimeout(timeout);
+
         if (!response.ok) {
+            // ... (error handling same as before)
             const errorText = await response.text();
             console.error('[Agent] OpenRouter error:', response.status, errorText);
-
-            // Try to parse the error message from OpenRouter
+             // Try to parse the error message from OpenRouter
             let errorMessage = response.statusText;
             try {
                 const errorData = JSON.parse(errorText);
@@ -367,17 +381,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     errorMessage = errorData.error.message;
                 }
             } catch {
-                // If parsing fails, use the raw text if available
                 if (errorText && errorText.length < 200) {
                     errorMessage = errorText;
                 }
             }
-
             return res.status(response.status).json({
                 error: `OpenRouter API error: ${errorMessage}`
             });
         }
 
+        // Handle the stream
+        if (!response.body) {
+            return res.status(500).json({ error: 'No response body' });
+        }
+
+        // Parse the JSON response
         const data = await response.json();
         const choice = data.choices?.[0];
 
@@ -403,7 +421,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             model: data.model
         });
 
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+             console.log('[Agent] Request aborted');
+             return res.status(499).json({ error: 'Client closed request' });
+        }
         console.error('[Agent] Error:', error);
         return res.status(500).json({
             error: error instanceof Error ? error.message : 'Internal server error'

@@ -90,10 +90,17 @@ function App() {
     fetchSelectedPoints();
   }, [selectionPredicate, coordinatorReady]);
 
-  // Auto-scroll to bottom of messages
+  // Scroll state
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
+
+  // Auto-scroll logic: Only scroll when manually triggered (e.g. new user message)
+  // or when initially loading
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+    if (shouldAutoScroll) {
+       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+       setShouldAutoScroll(false);
+    }
+  }, [messages, shouldAutoScroll]);
 
   useEffect(() => {
     async function init() {
@@ -171,10 +178,11 @@ function App() {
     };
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
-  const handleSend = async () => {
+    const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMessage = input.trim();
     setInput('');
+    setShouldAutoScroll(true); // Scroll to bottom when user sends message
     // Pass both selectedPoints and the predicate for tool queries
     await sendMessage(userMessage, selectedPoints, selectionPredicate);
   };
@@ -474,8 +482,8 @@ function App() {
                 </div>
               ))}
 
-              {/* Loading indicator with tool status */}
-              {isLoading && (
+              {/* Loading indicator with tool status - only show if we have a status message */}
+              {isLoading && currentStep && (
                 <div className="message assistant loading">
                   <div className="typing-indicator">
                     <span></span><span></span><span></span>
