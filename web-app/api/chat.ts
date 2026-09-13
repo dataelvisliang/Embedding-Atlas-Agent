@@ -23,7 +23,7 @@ export default async function handler(
 
   // Get API key from environment (secure, server-side only)
   const apiKey = process.env.OPENROUTER_API_KEY;
-  const defaultModel = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-nano-30b-a3b:free';
+  const defaultModel = process.env.OPENROUTER_MODEL || 'z-ai/glm-5.3-flash';
 
   if (!apiKey) {
     return res.status(500).json({ error: 'OpenRouter API key not configured' });
@@ -49,7 +49,7 @@ export default async function handler(
       body: JSON.stringify({
         model: model || defaultModel,
         messages: messages,
-        reasoning: { effort: 'none', exclude: true }
+        reasoning: { effort: 'low', exclude: true }
       })
     });
 

@@ -244,12 +244,12 @@ function App() {
   // Tool icon mapping
   const getToolIcon = (toolName: string) => {
     switch (toolName) {
-      case 'search_reviews': return <Search size={12} />;
-      case 'scan_regions':
+      case 'filter_records': return <Search size={12} />;
+      case 'scan_projection':
       case 'inspect_regions':
-      case 'refine_region': return <Database size={12} />;
+      case 'subdivide_region': return <Database size={12} />;
       case 'compare_regions': return <BarChart3 size={12} />;
-      case 'save_results': return <Download size={12} />;
+      case 'save_selection': return <Download size={12} />;
       default: return <Database size={12} />;
     }
   };

@@ -20,10 +20,10 @@ The web app features a sophisticated **Multi-Agent Architecture** that enables a
 
 ### How It Works
 
-1.  **Coarse Scan**: The Sommelier finds dense grid cells under optional lexical and metadata constraints.
+1.  **Task and Scan**: The Sommelier records explicit constraints with source quotes, then proposes circles at its chosen map scale.
 2.  **Parallel Circular Probes**: It places several true circular probes in one action and delegates their samples to the **Analyzer Agent**.
-3.  **Adaptive Traversal**: Based on density, themes, and projection agreement, it rejects, compares, or refines regions.
-4.  **High-D Diagnostic**: Stored embedding-neighbor data estimates whether high-dimensional neighbors remain inside each 2D probe.
+3.  **Adaptive Traversal**: The main Agent chooses more circles, comparison, refinement or stopping from purity, intent and text evidence.
+4.  **Search Contract**: One session validates candidate provenance, immutable scope, budgets and terminal conditions. Runtime search uses XY, metadata and text without an embedding index.
 5.  **Curation**: Verified reviews are saved separately from retrieval and displayed as interactive Category Cards.
 
 The projection is treated as a candidate-generation space, not semantic ground truth. See [Projection-Guided Agentic Search](web-app/docs/PROJECTION_AGENT_SEARCH.md) for tool boundaries, geometry, stopping behavior, and evaluation hooks.
@@ -36,27 +36,28 @@ flowchart TB
         Atlas["Embedding Atlas"]
         Chat["Chat Widget"]
         Memory["savedCategories Map<br/>(Client-Side Memory)"]
-        Tools["Tool Executor"]
 
         Atlas --> Chat
-        Tools --> Memory
         Memory --> Chat
     end
 
     subgraph Backend["Vercel Serverless"]
         Orchestrator["/api/agent<br/>Sommelier Agent"]
         Analyzer["/api/analyzer<br/>Flavor Analyzer"]
+        Tools["SearchSession + Tool Executor"]
     end
 
     subgraph LLM["OpenRouter API"]
-        Model["LLM Model (e.g. Nemotron-70B)"]
+        Model["LLM Model (GLM-5.3-Flash by default)"]
     end
 
     Chat --> Orchestrator
     Orchestrator --> Tools
     Tools -->|"inspect_regions"| Analyzer
     Analyzer -->|"summary"| Orchestrator
-    Orchestrator -->|"save_results"| Memory
+    Orchestrator --> Model
+    Analyzer --> Model
+    Orchestrator -->|"save_selection"| Memory
     Orchestrator -->|"final answer"| Chat
 ```
 
@@ -67,12 +68,12 @@ The orchestrator agent that coordinates exploration and delegates analysis tasks
 ```mermaid
 flowchart LR
     subgraph Tools["Available Tools"]
-        Search["search_reviews<br/>Known constraints"]
-        Scan["scan_regions<br/>Coarse candidates"]
+        Define["define_task<br/>Freeze sourced intent"]
+        Scan["scan_projection<br/>Coarse candidates"]
         Inspect["inspect_regions<br/>Parallel circles → Analyzer"]
-        Refine["refine_region<br/>Zoom into a circle"]
+        Refine["subdivide_region<br/>Partition a parent region"]
         Compare["compare_regions<br/>Contrast circles"]
-        Save["save_results<br/>Client memory"]
+        Finish["finish_search<br/>Validated terminal request"]
     end
 
     Agent["Sommelier Agent<br/>/api/agent"] --> Tools

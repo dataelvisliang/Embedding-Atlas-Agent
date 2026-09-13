@@ -1,131 +1,66 @@
-# Projection-Guided Agentic Search
+# PAR search contract v3
 
-The Atlas agent treats the UMAP projection as an operational search space rather than a visualization-only artifact.
+Version: `par-agent-v3`. This replaces the old free-planner/SearchPolicy pair and the deterministic circle scheduler. The original strategy is preserved: the main Agent scans a map, chooses several circles, observes purity/intent evidence, and chooses further exploration, subdivision or termination.
 
-## Research assumption
+## Ownership
 
-Points that are close in the 2D projection are candidates for semantic similarity. This is a probabilistic assumption, not ground truth: UMAP can introduce false neighbors, tear high-dimensional neighborhoods apart, and distort density. Region results therefore include a `projection_agreement` diagnostic computed from the stored high-dimensional k-neighbor graph.
+- `searchContract.ts`: single executable source of input schemas, limits and planner instructions.
+- `SearchSession`: sole owner of task, candidate provenance, evidence eligibility, budgets and terminal state. It validates decisions; it does not choose circles.
+- OpenAI Agents SDK: owns model/tool turns. Main Agent selects actions and candidates. The SDK tool completion callback stops the run only when the session is terminal.
+- `ToolExecutor`: SQL over XY, metadata and text samples. No runtime vectors or embedding service.
+- Analyzer: scores actual samples, including price/country/variety/points and original intent. One attempt per inspection; the session permits one failed-circle retry.
+- Presenter: one result selection after termination, derived from sampled record IDs. It is not an Agent tool.
 
-## Search loop
+## Six Agent tools
 
-1. **Structured retrieval** handles known terms and metadata constraints.
-2. **Coarse scan** bins the projection and proposes dense candidate regions.
-3. **Parallel probes** place up to eight circular regions in one action.
-4. **Observation** returns density, sampled themes, semantic purity, intent match, representative reviews, and projection agreement.
-5. **Adaptive action** keeps, rejects, compares, or refines regions based on the observation.
-6. **Stopping** occurs when evidence is sufficient, results repeat, or further probes are unlikely to change the answer.
-7. **Saving** is a separate UI-memory action performed only after verification.
-
-This workflow is agentic when later probes depend on earlier observations. A fixed one-shot batch of circles is parallel spatial retrieval, not the complete agentic loop.
-
-## SearchContext contract
-
-Every retrieval or spatial tool runs inside one controller-owned `SearchContext` rather than independently reinterpreting the user request. It carries executable `hard_filters`, the `semantic_intent`, projection state, and evidence state.
-
-For every spatial operation:
-
-```text
-eligible_points = spatial_scope ∩ hard_filters
-```
-
-Therefore `scan_regions`, `inspect_regions`, `refine_region`, and `compare_regions` cannot reintroduce records excluded by price or metadata constraints. Results expose `context_applied`, and reported density is eligible density under that context.
-
-## Enforced search policy
-
-`SearchPolicy` makes the traversal reproducible instead of relying on prompt compliance. Each user request starts a fresh policy session with these default ceilings:
-
-| Resource | Limit |
-| --- | ---: |
-| Tool actions | 18 |
-| Coarse scans | 2 |
-| Structured searches | 4 |
-| Inspected circles | 24 |
-| Refinements | 5 |
-| Comparisons | 4 |
-| Saved categories | 8 |
-| Model tokens (orchestrator + Analyzer) | 80,000 |
-| Wall-clock exploration time | 120 seconds |
-
-The controller canonicalizes scan/refine/compare parameters, rejects duplicate actions, and treats circles as duplicates when their centers are within 25% of the smaller radius and their radius ratio is at most 1.25. Oversized probe batches are truncated to the remaining circle budget. Two consecutive policy-blocked retries force convergence so a non-compliant model cannot spin until the iteration ceiling.
-
-Themes and category labels returned by each probe round are accumulated as discovery signals, but only themes from circles with `intent_match >= 0.75` count as relevant progress. Two consecutive probe rounds with no new relevant theme lock spatial search. After locking, the controller allows only `save_results` followed by the final answer.
-
-Before every LLM step, the controller injects `SEARCH_POLICY_STATE`, including remaining budgets, discovered themes, recent events, and the stop reason. The UI displays live probe/theme/action/token/time counts. The full parameterized trajectory is emitted to the browser console and included in downloaded chat Markdown for experiment capture.
-
-## Tool boundaries
-
-| Tool | Responsibility | Does not do |
+| Tool | Inputs | Contract |
 | --- | --- | --- |
-| `search_reviews` | Known lexical and metadata retrieval | Spatial exploration |
-| `scan_regions` | Coarse grid candidate generation | Theme interpretation |
-| `inspect_regions` | Batch circular sampling and Analyzer interpretation | Global scanning |
-| `refine_region` | Propose smaller children inside a promising circle | Interpret the children |
-| `compare_regions` | Quantitative contrast with consistent metrics | Save results |
-| `save_results` | Persist verified IDs for UI cards | Retrieval |
+| define_task | mode, target_count, finding_unit, require_diversity, hard_filters, filter_sources, evidence_requirements | Once, before retrieval; immutable thereafter |
+| scan_projection | grid_size, reason | Proposes spatial circles; cannot interpret semantics; two distinct scales maximum |
+| inspect_regions | region_ids, reason | 3–8 proposals together, or all eligible when fewer than 3 remain; exact geometry and scope injected |
+| subdivide_region | parent_id, reason | Parent has relevant mixed evidence; contained smaller children; at most depth 2 and one subdivision per parent |
+| compare_regions | region_ids, reason | Accepted inspected evidence only; must precede comparison success |
+| finish_search | reason, finding_ids, explanation, distinctions | Session verifies the target or grounds for partial completion; then all further actions are forbidden |
 
-DuckDB SQL is an implementation detail. The Agent receives structured parameters instead of an unrestricted SQL tool.
+Generic tool names do not imply arbitrary-dataset adapters: the current SQL metadata adapter still supports wine country, variety, price and points. Color and semantic constraints must remain in `evidence_requirements` and are judged from sample evidence. Do not invent literal keyword filters for flavors. Original query always reaches Analyzer, even with an oracle TaskSpec.
 
-## Geometry
+Every Agent-compiled SQL filter requires a verbatim source quote. Numeric values and every country/variety value must occur in that quote; semantic normalization belongs in a trusted adapter, not model improvisation. Unspecified constraints are omitted, never represented by zero. This checks provenance, not the full semantic correctness of task compilation; the generated task remains part of evaluation. A benchmark oracle task enters only through the in-process pilot runner's separately labelled seed method and then obeys the same retrieval, evidence and terminal invariants. The public API does not accept oracle TaskSpecs.
 
-`scan_regions` uses square grid cells because they are cheap to aggregate and cache. The returned cell center and suggested radius become proposals for `inspect_regions`, which uses a true circle:
+`finding_unit` defines ONE style/theme/region. `target_count` and between-region diversity belong to the whole session. Analyzer must not lower a pure single-style circle's relevance because the user wants multiple styles overall, or reward a mixed circle for containing the entire requested count.
 
-```text
-(projection_x - center_x)^2 + (projection_y - center_y)^2 <= radius^2
-```
+`exact` record requests return `unsupported`; this region workflow must not silently substitute region counts for record counts. Semantic, exploration and comparison return regions. Map-selection scoping requires an explicit separate scope adapter and must not silently search the whole map.
 
-`refine_region` subdivides the bounding area of a selected parent circle and only counts points inside the parent. The Agent must inspect the returned child circles before treating them as semantic findings.
+## Evidence states and decisions
 
-## Evaluation hooks
+Proposed -> accepted / frontier / rejected / failed. Failed is unknown, never a semantic rejection, never negative progress. Valid evidence needs at least 3 distinct sampled IDs, numeric scores in [0,1], a category and an explicit constraint judgment. IDs come from the SQL sample, never from generated text.
 
-Every inspected region exposes enough information to log:
+- Strong: purity >= .70 and intent >= .75.
+- Soft: purity >= .75 and intent >= .65.
+- Diversity: exploration only, purity >= .70 and intent >= .60, with no detected duplicate.
+- All accepts require constraint_match=true.
+- Refinement: frontier with intent >= .60 and purity < .70, constraint_match=true, sufficient depth/action/circle budget.
+- Semantic duplication uses matching labels, token-set similarity or sampled-ID overlap. This is a conservative heuristic, not proof of semantic distinctness; the Agent supplies distinctions and human benchmark judgments assess them.
 
-- candidate density and analyzed sample size;
-- selected coordinates and radius;
-- Analyzer themes and review IDs;
-- `purity` (0-1): estimated share of the sample supporting one dominant coherent theme;
-- `intent_match` (0-1): estimated strength of evidence satisfying the explicit user intent;
-- projection agreement;
-- number and order of scan, inspect, refine, and compare actions.
+Sampling is fixed by hash(row ID), with row ID as a tie-breaker. Pin dataset and DuckDB version for replay. LLM output remains nondeterministic. A fixed sample does not constitute a confidence interval or validation of every row in the circle.
 
-These fields support comparison against lexical search, high-dimensional ANN, XY-only retrieval, and hybrid agent baselines.
+## Termination
 
-## Candidate utility and state transitions
+One `terminal` object feeds API, UI and pilot. Terminal is absorbing.
 
-Every inspected circle receives a controller-side utility:
+- success: selected accepted findings reach target; diversity explanations present when required; comparison completed when required.
+- partial_success / no_evidence: fewer findings and either generated actions exhausted or two complete valid low-progress batches. An actionable refinement prevents early partial stop.
+- budget_exhausted: action, token, circle or wall-time budget/cancellation.
+- runtime_error: infrastructure failures, unrecoverable analysis or illegal premature model final.
+- unsupported: exact record workflow is outside this endpoint.
 
-```text
-utility =
-    0.45 * intent_match
-  + 0.20 * purity
-  + 0.15 * novelty
-  + 0.10 * coverage_gain
-  + 0.10 * confidence
-  - 0.05 search_cost
-```
+Unknown/failed analysis cannot justify `no_evidence`. Exhaustion refers to generated proposals and permitted scan scales, never proof that the dataset contains no answer. Reaching a budget with useful findings preserves those findings and the budget terminal.
 
-`confidence` combines sample sufficiency with projection agreement. Projection agreement affects confidence, not relevance. Accepted regions now carry an `acceptance_tier`:
+Token limits are checked against returned usage. A running model request/batch may overshoot the limit before its usage is known; it prevents subsequent actions, not charges already incurred. Failure responses can have unreported usage. Live output must not imply these are exact billing totals.
 
-| Tier | Intent match | Purity | State/action |
-| --- | ---: | ---: | --- |
-| `strong` | >= 0.75 | >= 0.70 | `accept` |
-| `soft` | >= 0.65 | >= 0.75 | `accept` unless sampled evidence visibly violates a hard user constraint |
-| `diversity` | >= 0.60 | >= 0.70 | `accept` for exploration/diverse-region queries when the theme is clear and non-duplicate |
-| none | >= 0.75 | < 0.70 | `refine` |
-| none | 0.60-0.75 | >= 0.70 | `resample` once, then `compare` |
-| none | 0.60-0.75 | < 0.70 | `explore` only when utility justifies cost |
-| none | < 0.60 | any | `reject` |
+## Evaluation contract
 
-Refinement requires the ID of a candidate in `refine` or `explore`; comparison requires at least two inspected, non-rejected IDs. Spatial review IDs can be saved only from `accept` candidates. A resampled candidate aggregates both score rounds and reports `score_stability`.
+Offline tests assert invalid-ID rejection, batch size, immutable scope, refinement containment/provenance, failure/retry separation, diversity count, comparison-before-success and absorbing terminal states. Tests allow different Agent strategies and successful one-batch completion.
 
-## Semantic stopping
+Live pilot uses the same query-to-define_task path as chat by default. `--oracle-task-spec` is a separately labeled experimental condition, not the product gate. Do not compare these conditions as if their input information were identical.
 
-The controller extracts a requested result count from explicit user wording when possible, otherwise targeting three accepted regions. Search stops when:
-
-- the accepted-region target is met;
-- enough accepted regions have purity >= 0.70;
-- enough strong frontier candidates exist to finalize without another blind search round;
-- relevant-theme coverage reaches the target (capped at two themes);
-- a requested comparison has actually executed;
-- or two rounds add no new relevant theme and no strong frontier remains;
-- or the best remaining frontier utility falls below 0.15 after at least two probe rounds;
-- or any hard action/token/time budget fires.
+Record contract validity separately from task success and relevance quality. Preserve incremental `.trace.jsonl` snapshots, generated task, accepted/rejected/frontier/failed, terminal, final answer, token counts and latency. Monetary cost stays null unless provider-reported pricing is available. Live pilot establishes integration behavior; it does not establish PAR superiority or annotation quality.

@@ -1,0 +1,28 @@
+{
+  "system_id": "par_agent_v3",
+  "label": "Projection Agent Search Contract v3",
+  "contract_version": "par-agent-v3",
+  "retrieval": ["projection_xy", "metadata_filters", "fixed_text_samples"],
+  "runtime_embeddings": false,
+  "agent_runtime": "@openai/agents",
+  "agent_model": "z-ai/glm-5.3-flash",
+  "analyzer_model": "z-ai/glm-5.3-flash",
+  "tools": ["define_task", "scan_projection", "inspect_regions", "subdivide_region", "compare_regions", "finish_search"],
+  "presentation_event": "save_selection",
+  "limits": {
+    "actions": 20,
+    "scans": 2,
+    "inspected_circles": 24,
+    "refinements": 5,
+    "refinement_depth": 2,
+    "failed_circle_retries": 1,
+    "total_tokens": 80000,
+    "wall_clock_ms": 120000
+  },
+  "acceptance": {
+    "strong": { "minimum_purity": 0.70, "minimum_intent_match": 0.75 },
+    "soft": { "minimum_purity": 0.75, "minimum_intent_match": 0.65 },
+    "diversity": { "mode": "exploration", "minimum_purity": 0.70, "minimum_intent_match": 0.60 },
+    "hard_constraint_match_required": true
+  }
+}

@@ -1,5 +1,12 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite"
+  "framework": "vite",
+  "functions": {
+    "api/agent.ts": {
+      "includeFiles": "{public/atlas/data/dataset.parquet,node_modules/@duckdb/duckdb-wasm/dist/duckdb-*.wasm,node_modules/@duckdb/duckdb-wasm/dist/duckdb-node-*.worker.cjs}",
+      "maxDuration": 120
+    }
+  }
 }

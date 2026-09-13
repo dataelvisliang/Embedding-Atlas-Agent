@@ -12,13 +12,15 @@ Write one JSON object per `(query_id, system_id, seed)` to `benchmark/runs/<syst
 
 ### Development-only PAR pilot
 
-Before freezing a PAR configuration, run the repeatable pilot on development queries only:
+Current contract: `par-agent-v3`, recorded in `configs/par_agent_v3.json`. Run from `web-app`, using the same task compiler as chat:
 
 ```powershell
-python benchmark/scripts/run_par_pilot.py --query-ids wine-dev-005 wine-dev-006 wine-dev-010 --sample-size 4 --max-steps 5
+npm exec -- tsx ../benchmark/scripts/run_sdk_par_pilot.ts wine-dev-005 wine-dev-006 wine-dev-010
 ```
 
-The expected trajectory is `scan_regions -> inspect_regions` followed by optional `refine_region`, then a stop/final answer. Use the pilot outputs to inspect `accepted`, `rejected`, `frontier`, `purity`, `intent_match`, `tokens`, `latency`, and `cost_usd`.
+The Agent defines a sourced task, scans, batch-inspects, optionally refines/compares, then requests finish. A one-batch success is valid. `contract_pass` measures the protocol; `task_success` measures the target terminal; neither measures human relevance. Inspect the compiled task and the evidence, not just the sequence.
+
+An optional `--oracle-task-spec` uses benchmark annotations as additional input and is explicitly labeled `oracle_task_spec`. It is not the product gate. Live runs write a completed JSONL plus incremental `.trace.jsonl`; costs remain null when unreported. Do not use the legacy Python runner for v3: it embeds a historical loop and obsolete prompt contract.
 
 To debug thresholds without polluting the blind benchmark pool, prepare a calibration sheet from a pilot run:
 

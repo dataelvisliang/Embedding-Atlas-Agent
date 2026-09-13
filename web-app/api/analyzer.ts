@@ -30,6 +30,8 @@ Your task is to analyze a set of wine reviews and extract:
 6. **Intent Match**: A score from 0.0 to 1.0 estimating how strongly the sampled region satisfies the supplied user intent and constraints. A region can match weakly even when internally pure.
 
 Calibration:
+- Evaluate ONE finding at the specificity the user requests. A broad umbrella such as 'all white wines' is not one coherent style if the sample spans unrelated styles. Use lower purity for such a mixed sample.
+- The requested number of findings and diversity BETWEEN regions are global search goals. A pure circle containing one appropriate style can score high intent_match even when the user asks for three different styles. Never reward a mixed circle merely because it contains several requested styles.
 - 0.90-1.00: nearly all sampled evidence supports the criterion
 - 0.70-0.89: strong majority support
 - 0.40-0.69: mixed or partial support
@@ -108,9 +110,9 @@ function parseAnalysis(content: string): any | null {
         if (!Array.isArray(parsed.themes)) parsed.themes = [];
         if (!Array.isArray(parsed.quotes)) parsed.quotes = [];
         if (typeof parsed.sentiment !== 'string') parsed.sentiment = 'Good';
-        if (typeof parsed.category !== 'string') return null;
-        if (!Number.isFinite(normalizedScore(parsed.purity, NaN)) || !Number.isFinite(normalizedScore(parsed.intent_match, NaN))) return null;
-        parsed.hard_constraint_match = typeof parsed.hard_constraint_match === 'boolean' ? parsed.hard_constraint_match : null;
+        if (typeof parsed.category !== 'string' || !parsed.category.trim()) return null;
+        if (![parsed.purity, parsed.intent_match].every(v => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1)) return null;
+        if (typeof parsed.hard_constraint_match !== 'boolean') return null;
         return parsed;
     } catch {
         return null;
@@ -132,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const apiKey = process.env.OPENROUTER_API_KEY;
-    const model = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-nano-30b-a3b:free';
+    const model = process.env.OPENROUTER_ANALYZER_MODEL || process.env.OPENROUTER_MODEL || 'z-ai/glm-5.3-flash';
 
     if (!apiKey) {
         return res.status(500).json({ error: 'OpenRouter API key not configured' });
@@ -184,39 +186,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Format reviews for LLM
         const reviewsText = reviews.map((r: any, idx: number) =>
-            `[${idx + 1}] Points: ${r.points || r.rating || r.Rating}\nTitle: ${r.title || 'Unknown'}\n${r.text || r.description || r.excerpt}`
+            `[${idx + 1}] ID: ${r.id ?? r.__row_index__} | Points: ${r.points ?? r.rating ?? r.Rating} | Price: ${r.price ?? 'unknown'} | Country: ${r.country ?? 'unknown'} | Variety: ${r.variety ?? 'unknown'}\nTitle: ${r.title || 'Unknown'}\n${String(r.text || r.description || r.excerpt || '').slice(0, 800)}`
         ).join('\n\n');
 
         console.log(`[Analyzer] Analyzing ${reviews.length} reviews in circle (${region.center_x}, ${region.center_y}, r=${region.radius})`);
 
         const callAnalyzer = async (retry = false) => {
-            const llmResponse = await fetch(OPENROUTER_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': req.headers.referer as string || req.headers.origin as string || 'https://localhost',
-                    'X-Title': 'Wine Review Analyzer Agent'
-                },
-                body: JSON.stringify({
-                    model,
-                    messages: [
-                        { role: 'system', content: ANALYZER_SYSTEM_PROMPT },
-                        { role: 'user', content: `${retry ? 'Retry: return only the required JSON object. Do not add explanations.\n\n' : ''}User intent: ${String(intent || 'Open-ended wine theme discovery').slice(0, 500)}\n\nAnalyze these ${reviews.length} sampled reviews. If evidence is broad or mixed, return lower purity/intent_match rather than failing.\n\n${reviewsText}` }
-                    ],
-                    temperature: 0,
-                    max_tokens: 900,
-                    response_format: { type: 'json_schema', json_schema: ANALYZER_JSON_SCHEMA },
-                    reasoning: { effort: 'none', exclude: true },
-                    plugins: [{ id: 'response-healing' }]
-                })
-            });
-            if (!llmResponse.ok) {
-                const errorText = await llmResponse.text();
-                console.error('[Analyzer] LLM error:', llmResponse.status, errorText);
-                throw new Error(`Analyzer Agent failed: ${llmResponse.statusText}`);
+            const abort = new AbortController();
+            const timeout = setTimeout(() => abort.abort(), 20_000);
+            let llmResponse: Response;
+            try {
+                llmResponse = await fetch(OPENROUTER_API_URL, {
+                    method: 'POST', signal: abort.signal,
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': req.headers.referer as string || req.headers.origin as string || 'https://localhost',
+                        'X-Title': 'Wine Review Analyzer Agent'
+                    },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            { role: 'system', content: ANALYZER_SYSTEM_PROMPT },
+                            { role: 'user', content: `${retry ? 'Retry: return only the required JSON object. Do not add explanations.\n\n' : ''}User intent: ${String(intent || 'Open-ended wine theme discovery').slice(0, 5000)}\n\nAnalyze these ${reviews.length} sampled reviews. If evidence is broad or mixed, return lower purity/intent_match rather than failing.\n\n${reviewsText}` }
+                        ],
+                        temperature: 0,
+                        max_tokens: 900,
+                        response_format: { type: 'json_schema', json_schema: ANALYZER_JSON_SCHEMA },
+                        reasoning: { effort: 'low', exclude: true },
+                        plugins: [{ id: 'response-healing' }]
+                    })
+                });
+                if (!llmResponse.ok) {
+                    const errorText = await llmResponse.text();
+                    console.error('[Analyzer] LLM error:', llmResponse.status, errorText);
+                    throw new Error(`Analyzer Agent failed: ${llmResponse.statusText}`);
+                }
+                return await llmResponse.json();
+            } finally {
+                clearTimeout(timeout);
             }
-            return await llmResponse.json();
         };
 
         const extractContent = (data: any): string => {
@@ -233,7 +242,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let analysis: any = null;
         const failureReasons: string[] = [];
         let attempts = 0;
-        for (let attempt = 0; attempt < 3; attempt++) {
+        // SearchSession owns the single bounded retry. No hidden multiplicative retries.
+        for (let attempt = 0; attempt < 1; attempt++) {
             attempts = attempt + 1;
             try {
                 llmData = await callAnalyzer(attempt > 0);
@@ -281,12 +291,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log('[Analyzer] Extracted content:', content.substring(0, 200) + '...');
 
-        console.log('[Analyzer] LLM response:', {
-            hasChoices: !!llmData.choices,
-            choicesLength: llmData.choices?.length,
-            firstChoice: llmData.choices?.[0],
-            message: llmData.choices?.[0]?.message
-        });
 
         const response: AnalyzerResponse = {
             category: analysis.category || 'Unknown',
