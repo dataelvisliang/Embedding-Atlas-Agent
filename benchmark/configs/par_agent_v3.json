@@ -5,8 +5,8 @@
   "retrieval": ["projection_xy", "metadata_filters", "fixed_text_samples"],
   "runtime_embeddings": false,
   "agent_runtime": "@openai/agents",
-  "agent_model": "z-ai/glm-5.3-flash",
-  "analyzer_model": "z-ai/glm-5.3-flash",
+  "agent_model": "google/gemini-3.8-flash",
+  "analyzer_model": "google/gemini-3.8-flash",
   "tools": ["define_task", "scan_projection", "inspect_regions", "subdivide_region", "compare_regions", "finish_search"],
   "presentation_event": "save_selection",
   "limits": {

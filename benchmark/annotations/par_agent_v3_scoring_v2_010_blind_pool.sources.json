@@ -1,0 +1,315 @@
+{
+  "wine-dev-010:region-706cfaf7ed5e": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004915254Z.jsonl",
+    "region_id": "scan-action-2-4",
+    "geometry": {
+      "id": "scan-action-2-4",
+      "center_x": 10,
+      "center_y": 10,
+      "radius": 2
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-4",
+      "category": "Crisp Value Whites",
+      "purity": 0.833,
+      "intent_match": 0.708,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-30065": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-21788": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-59089": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-93909": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-62668": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-17194": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-63010": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-98794": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-22456": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-41383": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-66014": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:review-68252": {
+    "parent_region_units": [
+      "region-706cfaf7ed5e"
+    ]
+  },
+  "wine-dev-010:region-b5177d359da9": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004915254Z.jsonl",
+    "region_id": "scan-action-2-6",
+    "geometry": {
+      "id": "scan-action-2-6",
+      "center_x": 14,
+      "center_y": 6,
+      "radius": 2
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-6",
+      "category": "Value Riesling",
+      "purity": 0.75,
+      "intent_match": 0.708,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-55178": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-23256": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-75313": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-92340": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-62311": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-125336": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-26067": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-104191": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-21731": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-12519": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-6647": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-34046": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:region-77f138457fa9": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004915254Z.jsonl",
+    "region_id": "scan-action-2-10",
+    "geometry": {
+      "id": "scan-action-2-10",
+      "center_x": 10,
+      "center_y": 2,
+      "radius": 2
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-10",
+      "category": "Albariño (Rías Baixas & California)",
+      "purity": 0.833,
+      "intent_match": 0.708,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-47160": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-57181": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-106108": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-101291": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-90065": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-27658": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-124273": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-45128": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-104103": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-118108": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-16153": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:review-42189": {
+    "parent_region_units": [
+      "region-77f138457fa9"
+    ]
+  },
+  "wine-dev-010:region-7a7e478b92f2": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004915254Z.jsonl",
+    "region_id": "scan-action-2-13",
+    "geometry": {
+      "id": "scan-action-2-13",
+      "center_x": -10,
+      "center_y": 10,
+      "radius": 2
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-13",
+      "category": "Alto Adige Lagrein",
+      "purity": 1,
+      "intent_match": 0.722,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-24104": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-110356": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-9735": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-14796": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-81959": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-9757": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-75694": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-11144": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  },
+  "wine-dev-010:review-103738": {
+    "parent_region_units": [
+      "region-7a7e478b92f2"
+    ]
+  }
+}

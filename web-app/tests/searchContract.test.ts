@@ -50,7 +50,12 @@ const finish = (s: SearchSession, f: Fixture) => s.act('finish_search', { reason
 
 // A successful one-batch search is valid; refinement is optional.
 {
-    const { s, f } = await setup(); await inspect(s, f); await finish(s, f);
+    const { s, f } = await setup(); await inspect(s, f);
+    const evidenceCalls = f.calls.length;
+    await s.act('scan_projection', { grid_size: 4, reason: 'collect unnecessary evidence' }, f);
+    assert.equal(f.calls.length, evidenceCalls, 'retrieval is blocked once the accepted target is met');
+    assert.equal(s.modelState().next_required, 'finish_search');
+    await finish(s, f);
     assert.equal(s.terminal?.state, 'success');
     assert.equal(s.snapshot().stop_reason, s.terminal?.reason);
     const count = f.calls.length;

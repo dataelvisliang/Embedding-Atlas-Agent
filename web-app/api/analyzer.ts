@@ -7,14 +7,14 @@ const ANALYZER_JSON_SCHEMA = {
     strict: true,
     schema: {
         type: 'object', additionalProperties: false,
-        required: ['category', 'sentiment', 'themes', 'quotes', 'purity', 'purity_rationale', 'intent_match', 'intent_match_rationale', 'hard_constraint_match', 'outlier_count'],
+        required: ['category', 'sentiment', 'themes', 'quotes', 'dominant_theme_membership', 'intent_relevance', 'purity_rationale', 'intent_match_rationale'],
         properties: {
             category: { type: 'string' }, sentiment: { type: 'string', enum: ['Excellent', 'Good', 'Mediocre'] },
             themes: { type: 'array', items: { type: 'string' }, minItems: 0, maxItems: 5 },
             quotes: { type: 'array', items: { type: 'string' }, minItems: 0, maxItems: 3 },
-            purity: { type: 'number', minimum: 0, maximum: 1 }, purity_rationale: { type: 'string' },
-            intent_match: { type: 'number', minimum: 0, maximum: 1 }, intent_match_rationale: { type: 'string' },
-            hard_constraint_match: { type: 'boolean' }, outlier_count: { type: 'integer', minimum: 0 }
+            dominant_theme_membership: { type: 'array', minItems: 1, maxItems: 50, items: { type: 'boolean' } },
+            intent_relevance: { type: 'array', minItems: 1, maxItems: 50, items: { type: 'integer', minimum: 0, maximum: 2 } },
+            purity_rationale: { type: 'string' }, intent_match_rationale: { type: 'string' }
         }
     }
 } as const;
@@ -26,17 +26,15 @@ Your task is to analyze a set of wine reviews and extract:
 2. **Quality Perception**: Overall impression of quality (Excellent, Good, Mediocre)
 3. **Flavor Notes**: List of 2-5 specific flavor notes or characteristics found in the reviews (e.g., "cherry", "oak", "earthy", "high tannins")
 4. **Top Quotes**: Extract 2-3 representative short quotes (max 100 chars each) that best describe the wine's character
-5. **Semantic Purity**: A score from 0.0 to 1.0 estimating the share of sampled reviews that support one dominant coherent wine theme. A region can be pure even when it is irrelevant to the user's intent.
-6. **Intent Match**: A score from 0.0 to 1.0 estimating how strongly the sampled region satisfies the supplied user intent and constraints. A region can match weakly even when internally pure.
+5. **Per-item dominant-theme membership**: Mark whether each sampled review supports the same single dominant theme at the requested finding specificity.
+6. **Per-item intent relevance**: 2 directly satisfies the local intent, 1 partially satisfies it or lacks evidence for a soft facet, 0 is irrelevant or contradicted.
 
 Calibration:
-- Evaluate ONE finding at the specificity the user requests. A broad umbrella such as 'all white wines' is not one coherent style if the sample spans unrelated styles. Use lower purity for such a mixed sample.
+- Evaluate ONE finding at the specificity the user requests. A broad umbrella such as 'all white wines', 'all red wines', or one grape variety is not automatically a coherent flavor/style theme. Mark dominant_theme_member=true only when the item's evidence supports the same specific theme as the category.
 - The requested number of findings and diversity BETWEEN regions are global search goals. A pure circle containing one appropriate style can score high intent_match even when the user asks for three different styles. Never reward a mixed circle merely because it contains several requested styles.
-- 0.90-1.00: nearly all sampled evidence supports the criterion
-- 0.70-0.89: strong majority support
-- 0.40-0.69: mixed or partial support
-- 0.10-0.39: weak support
-- 0.00-0.09: absent or contradicted
+- Judge every item independently before summarizing. Sweetness, oak, defects, color and dominant fruit can make an item only partial or irrelevant even when its variety matches.
+- Price/value without a numeric user cutoff is relative evidence, not a hidden hard threshold. Consider price together with points and review quality.
+- Return both assessment arrays in exactly the same order and length as the numbered reviews. Position 1 evaluates review [1], position 2 evaluates review [2], and so on. Never output review IDs.
 
 Output only one JSON object with exactly these keys:
 {
@@ -44,15 +42,13 @@ Output only one JSON object with exactly these keys:
   "sentiment": "Excellent|Good|Mediocre",
   "themes": ["note1", "note2", ...],
   "quotes": ["quote1", "quote2", "quote3"],
-  "purity": 0.0,
+  "dominant_theme_membership": [true, false],
+  "intent_relevance": [2, 1],
   "purity_rationale": "one short evidence-based sentence",
-  "intent_match": 0.0,
-  "intent_match_rationale": "one short evidence-based sentence",
-  "hard_constraint_match": true,
-  "outlier_count": 0
+  "intent_match_rationale": "one short evidence-based sentence"
 }
 
-If the sampled reviews are mixed, still choose the best concise category and lower the purity score. hard_constraint_match must be false if sampled evidence contradicts an explicit user requirement such as color, price, score, country, or variety. Score the supplied reviews only. Do not infer from coordinates or density. Be precise and data-driven. The category should be informative.`;
+If the sampled reviews are mixed, still choose the best concise category and mark nonmembers explicitly. Score the supplied reviews only. Do not infer from coordinates, density, or assumed properties not present in the text/metadata. Be precise and data-driven. The category should be informative.`;
 
 interface AnalyzerRequest {
     region: {
@@ -88,20 +84,14 @@ interface AnalyzerResponse {
     analysis_failed?: boolean;
 }
 
-const normalizedScore = (value: unknown, fallback = 0.5): number => {
-    if (typeof value === 'string') {
-        const label = value.trim().toLowerCase();
-        if (['none', 'absent', 'no', 'very low'].includes(label)) return 0;
-        if (['low', 'weak'].includes(label)) return 0.25;
-        if (['medium', 'moderate', 'mixed', 'partial'].includes(label)) return 0.5;
-        if (['high', 'strong'].includes(label)) return 0.75;
-        if (['very high', 'excellent', 'perfect'].includes(label)) return 1;
-    }
-    const score = Number(value);
-    return Number.isFinite(score) ? Math.round(Math.min(1, Math.max(0, score)) * 1000) / 1000 : fallback;
-};
+interface ItemAssessment { id: number; dominant_theme_member: boolean; intent_relevance: 0 | 1 | 2; theme: string | null }
+interface ModelAnalysis {
+    category: string; sentiment: string; themes: string[]; quotes: string[];
+    dominant_theme_membership: boolean[]; intent_relevance: Array<0 | 1 | 2>;
+    purity_rationale: string; intent_match_rationale: string;
+}
 
-function parseAnalysis(content: string): any | null {
+function parseAnalysis(content: string): ModelAnalysis | null {
     try {
         const jsonMatch = content.match(/```json\n([\s\S]+?)\n```/) || content.match(/\{[\s\S]+\}/);
         const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
@@ -111,12 +101,30 @@ function parseAnalysis(content: string): any | null {
         if (!Array.isArray(parsed.quotes)) parsed.quotes = [];
         if (typeof parsed.sentiment !== 'string') parsed.sentiment = 'Good';
         if (typeof parsed.category !== 'string' || !parsed.category.trim()) return null;
-        if (![parsed.purity, parsed.intent_match].every(v => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1)) return null;
-        if (typeof parsed.hard_constraint_match !== 'boolean') return null;
+        if (!Array.isArray(parsed.dominant_theme_membership) || !parsed.dominant_theme_membership.every((value: unknown) => typeof value === 'boolean')) return null;
+        if (!Array.isArray(parsed.intent_relevance) || !parsed.intent_relevance.every((value: unknown) => [0, 1, 2].includes(value as number))) return null;
         return parsed;
     } catch {
         return null;
     }
+}
+
+export function deriveEvidenceScores(reviewIds: number[], analysis: ModelAnalysis) {
+    const expected = [...new Set(reviewIds)];
+    if (expected.length !== reviewIds.length || analysis.dominant_theme_membership.length !== expected.length ||
+        analysis.intent_relevance.length !== expected.length) return null;
+    const assessments = expected.map((id, index): ItemAssessment => ({
+        id, dominant_theme_member: analysis.dominant_theme_membership[index],
+        intent_relevance: analysis.intent_relevance[index], theme: analysis.dominant_theme_membership[index] ? analysis.category : null
+    }));
+    const dominantCount = assessments.filter(item => item.dominant_theme_member).length;
+    const relevanceTotal = assessments.reduce((sum, item) => sum + item.intent_relevance, 0);
+    return {
+        purity: Math.round(dominantCount / expected.length * 1000) / 1000,
+        intent_match: Math.round(relevanceTotal / (2 * expected.length) * 1000) / 1000,
+        outlier_count: expected.length - dominantCount,
+        item_assessments: assessments
+    };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -180,6 +188,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Calculate stats
         const points = reviews.map((r: any) => r.points || r.rating || r.Rating).filter((r: any) => typeof r === 'number');
+        const reviewIds = reviews.map((r: any) => r.id ?? r.__row_index__).filter((id: unknown): id is number => Number.isSafeInteger(id));
+        if (reviewIds.length !== reviews.length || new Set(reviewIds).size !== reviewIds.length) {
+            return res.status(400).json({ error: 'Every review requires one distinct integer ID.' });
+        }
         const avg_points = points.length > 0
             ? points.reduce((a: number, b: number) => a + b, 0) / points.length
             : 0;
@@ -239,7 +251,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         let llmData: any;
         let content = '';
-        let analysis: any = null;
+        let analysis: ModelAnalysis | null = null;
+        let evidenceScores: ReturnType<typeof deriveEvidenceScores> = null;
         const failureReasons: string[] = [];
         let attempts = 0;
         // SearchSession owns the single bounded retry. No hidden multiplicative retries.
@@ -256,9 +269,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 failureReasons.push('empty_content');
                 continue;
             }
-            analysis = parseAnalysis(content);
-            if (analysis) break;
-            failureReasons.push(content.includes('{') ? 'schema_invalid_or_malformed_json' : 'invalid_json');
+            const parsed = parseAnalysis(content);
+            const derived = parsed ? deriveEvidenceScores(reviewIds, parsed) : null;
+            if (parsed && derived) { analysis = parsed; evidenceScores = derived; break; }
+            failureReasons.push(parsed ? 'assessment_id_mismatch' : content.includes('{') ? 'schema_invalid_or_malformed_json' : 'invalid_json');
         }
 
         if (!analysis) {
@@ -270,7 +284,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 quotes: [],
                 count: reviews.length,
                 avg_points: Math.round(avg_points * 10) / 10,
-                review_ids: reviews.map((r: any) => r.id || r.__row_index__).filter((id: any) => id !== undefined),
+                review_ids: reviewIds,
                 region_id: region.id,
                 center_x: region.center_x,
                 center_y: region.center_y,
@@ -292,24 +306,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('[Analyzer] Extracted content:', content.substring(0, 200) + '...');
 
 
-        const response: AnalyzerResponse = {
+        if (!evidenceScores) throw new Error('Analyzer evidence scores were not derived');
+        const response: AnalyzerResponse & { item_assessments: ItemAssessment[] } = {
             category: analysis.category || 'Unknown',
             sentiment: analysis.sentiment || 'Good',
             themes: analysis.themes || [],
             quotes: analysis.quotes || [],
             count: reviews.length,
             avg_points: Math.round(avg_points * 10) / 10,
-            review_ids: reviews.map((r: any) => r.id || r.__row_index__).filter((id: any) => id !== undefined),
+            review_ids: reviewIds,
             region_id: region.id,
             center_x: region.center_x,
             center_y: region.center_y,
             radius: region.radius,
-            purity: normalizedScore(analysis.purity),
+            purity: evidenceScores.purity,
             purity_rationale: String(analysis.purity_rationale || 'No rationale returned.'),
-            intent_match: normalizedScore(analysis.intent_match),
+            intent_match: evidenceScores.intent_match,
             intent_match_rationale: String(analysis.intent_match_rationale || 'No rationale returned.'),
-            hard_constraint_match: analysis.hard_constraint_match,
-            outlier_count: Math.max(0, Math.min(reviews.length, Math.round(Number(analysis.outlier_count) || 0))),
+            hard_constraint_match: true,
+            outlier_count: evidenceScores.outlier_count,
+            item_assessments: evidenceScores.item_assessments,
             analyzer_status: 'ok',
             analyzer_attempts: attempts
         };

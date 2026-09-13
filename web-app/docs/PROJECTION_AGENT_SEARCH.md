@@ -8,7 +8,7 @@ Version: `par-agent-v3`. This replaces the old free-planner/SearchPolicy pair an
 - `SearchSession`: sole owner of task, candidate provenance, evidence eligibility, budgets and terminal state. It validates decisions; it does not choose circles.
 - OpenAI Agents SDK: owns model/tool turns. Main Agent selects actions and candidates. The SDK tool completion callback stops the run only when the session is terminal.
 - `ToolExecutor`: SQL over XY, metadata and text samples. No runtime vectors or embedding service.
-- Analyzer: scores actual samples, including price/country/variety/points and original intent. One attempt per inspection; the session permits one failed-circle retry.
+- Analyzer: labels every actual sample for dominant-theme membership and 0/1/2 intent relevance, including price/country/variety/points and original intent. The server deterministically aggregates those labels into purity and intent_match. One attempt per inspection; the session permits one failed-circle retry.
 - Presenter: one result selection after termination, derived from sampled record IDs. It is not an Agent tool.
 
 ## Six Agent tools
@@ -32,7 +32,7 @@ Every Agent-compiled SQL filter requires a verbatim source quote. Numeric values
 
 ## Evidence states and decisions
 
-Proposed -> accepted / frontier / rejected / failed. Failed is unknown, never a semantic rejection, never negative progress. Valid evidence needs at least 3 distinct sampled IDs, numeric scores in [0,1], a category and an explicit constraint judgment. IDs come from the SQL sample, never from generated text.
+Proposed -> accepted / frontier / rejected / failed. Failed is unknown, never a semantic rejection, never negative progress. Valid evidence needs at least 3 distinct sampled IDs, numeric scores in [0,1], a category and an explicit constraint judgment. Analyzer returns two typed arrays in input order: dominant-theme membership and 0/1/2 relevance. Wrong-length arrays fail analysis; trusted review IDs never enter model output. Purity is dominant-theme members divided by sample count. Intent match is summed per-item relevance divided by twice the sample count.
 
 - Strong: purity >= .70 and intent >= .75.
 - Soft: purity >= .75 and intent >= .65.
@@ -54,6 +54,8 @@ One `terminal` object feeds API, UI and pilot. Terminal is absorbing.
 - unsupported: exact record workflow is outside this endpoint.
 
 Unknown/failed analysis cannot justify `no_evidence`. Exhaustion refers to generated proposals and permitted scan scales, never proof that the dataset contains no answer. Reaching a budget with useful findings preserves those findings and the budget terminal.
+
+Once the accepted target is met, the session exposes `target_met=true` and blocks further scan, inspection and subdivision. Only a required comparison and `finish_search` remain legal. This prevents an Agent from spending the remaining budget after it already has sufficient evidence.
 
 Token limits are checked against returned usage. A running model request/batch may overshoot the limit before its usage is known; it prevents subsequent actions, not charges already incurred. Failure responses can have unreported usage. Live output must not imply these are exact billing totals.
 

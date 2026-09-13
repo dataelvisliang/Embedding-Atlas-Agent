@@ -1,0 +1,248 @@
+{
+  "wine-dev-006:region-a0d44203b7da": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004519811Z.jsonl",
+    "region_id": "scan-action-2-2",
+    "geometry": {
+      "id": "scan-action-2-2",
+      "center_x": -6,
+      "center_y": 6,
+      "radius": 2
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-2",
+      "category": "Savory Spicy Red Blends",
+      "purity": 0.833,
+      "intent_match": 0.708,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-006:review-93892": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-75921": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-99100": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-20832": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-98529": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-10297": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-50554": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-128812": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-24328": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-41745": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-93530": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:review-126752": {
+    "parent_region_units": [
+      "region-a0d44203b7da"
+    ]
+  },
+  "wine-dev-006:region-4a123832901d": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004519811Z.jsonl",
+    "region_id": "scan-action-2-7",
+    "geometry": {
+      "id": "scan-action-2-7",
+      "center_x": -6,
+      "center_y": 14,
+      "radius": 2
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-7",
+      "category": "Savory Nebbiolo & Etna Reds",
+      "purity": 0.833,
+      "intent_match": 0.833,
+      "recommended_action": "accept",
+      "acceptance_tier": "strong",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-006:review-111363": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-90755": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-77343": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-97602": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-12298": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-11429": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-8887": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-22928": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-74777": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-85124": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-105942": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:review-18940": {
+    "parent_region_units": [
+      "region-4a123832901d"
+    ]
+  },
+  "wine-dev-006:region-1cbefef1dcdb": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004519811Z.jsonl",
+    "region_id": "scan-action-2-9",
+    "geometry": {
+      "id": "scan-action-2-9",
+      "center_x": -2,
+      "center_y": 2,
+      "radius": 2
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-9",
+      "category": "Savory Argentine Bonarda & Toro Reds",
+      "purity": 0.75,
+      "intent_match": 0.667,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-006:review-93912": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-89063": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-72234": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-53982": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-77808": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-116096": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-60757": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-9798": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-126565": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-79950": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-75493": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  },
+  "wine-dev-006:review-19766": {
+    "parent_region_units": [
+      "region-1cbefef1dcdb"
+    ]
+  }
+}

@@ -122,6 +122,9 @@ export class SearchSession {
         if (name === 'define_task') return this.defineTask(parsed.data, true);
         if (!this.task) return this.deny(name, 'Define the task before searching.');
         if (name === 'finish_search') return this.finish(actionSchemas.finish_search.parse(parsed.data));
+        const targetMet = this.accepted().length >= this.task.target_count;
+        if (targetMet && ['scan_projection', 'inspect_regions', 'subdivide_region'].includes(name))
+            return this.deny(name, 'The accepted target is already met. Do not collect more evidence; compare if required, then call finish_search.');
         const data = parsed.data as Record<string, unknown>;
         let args: Record<string, unknown>;
         let requested: Candidate[] = [];
@@ -273,9 +276,12 @@ export class SearchSession {
         return { terminal: this.terminal };
     }
     modelState() {
+        const targetMet = Boolean(this.task && this.accepted().length >= this.task.target_count);
         return { contract: CONTRACT_VERSION, bounds: this.bounds, task: this.task, terminal: this.terminal,
             remaining: { actions: this.limits.actions - this.actions, scans: this.limits.scans - this.scans.size, circles: this.limits.inspected - this.inspected, tokens: this.limits.tokens - this.tokens },
             low_progress_batches: this.lowProgress,
+            target_met: targetMet,
+            next_required: targetMet ? this.task?.mode === 'comparison' && !this.comparisonResults.length ? 'compare_regions' : 'finish_search' : null,
             candidates: [...this.candidates.values()].map(c => ({
                 id: c.id, xy: [c.center_x, c.center_y], radius: c.radius, parent_id: c.parent_id,
                 status: c.status, population: c.population, can_refine: this.canRefine(c),

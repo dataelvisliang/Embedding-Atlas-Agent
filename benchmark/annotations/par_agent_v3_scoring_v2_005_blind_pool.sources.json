@@ -1,0 +1,254 @@
+{
+  "wine-dev-005:region-c027f60d8549": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004416199Z.jsonl",
+    "region_id": "scan-action-2-15",
+    "geometry": {
+      "id": "scan-action-2-15",
+      "center_x": 10,
+      "center_y": 10,
+      "radius": 2
+    },
+    "compiled_filters": {
+      "max_price": 25
+    },
+    "hidden_model_evidence": {
+      "id": "scan-action-2-15",
+      "category": "Fresh Affordable Summer Whites",
+      "purity": 0.75,
+      "intent_match": 0.875,
+      "recommended_action": "accept",
+      "acceptance_tier": "strong",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-005:review-30065": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-59089": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-93909": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-62668": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-98794": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-22456": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-41383": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-66014": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-68252": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-75964": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-37651": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:review-27937": {
+    "parent_region_units": [
+      "region-c027f60d8549"
+    ]
+  },
+  "wine-dev-005:region-cd5af65c16bb": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004416199Z.jsonl",
+    "region_id": "scan-action-2-16",
+    "geometry": {
+      "id": "scan-action-2-16",
+      "center_x": 6,
+      "center_y": 14,
+      "radius": 2
+    },
+    "compiled_filters": {
+      "max_price": 25
+    },
+    "hidden_model_evidence": {
+      "id": "scan-action-2-16",
+      "category": "Affordable Chardonnay & Crisp Whites",
+      "purity": 0.833,
+      "intent_match": 0.667,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-005:review-63873": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-19413": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-2642": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-79459": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-30144": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-121852": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-99487": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-85065": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-49928": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-40701": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-98065": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:review-24967": {
+    "parent_region_units": [
+      "region-cd5af65c16bb"
+    ]
+  },
+  "wine-dev-005:region-ae72b169e539": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T004416199Z.jsonl",
+    "region_id": "subdivision-action-4-3",
+    "geometry": {
+      "id": "subdivision-action-4-3",
+      "center_x": 6,
+      "center_y": 8.666666666666666,
+      "radius": 0.6666666666666661
+    },
+    "compiled_filters": {
+      "max_price": 25
+    },
+    "hidden_model_evidence": {
+      "id": "subdivision-action-4-3",
+      "category": "Crisp Affordable Summer Whites",
+      "purity": 0.917,
+      "intent_match": 0.917,
+      "recommended_action": "accept",
+      "acceptance_tier": "strong",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-005:review-89714": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-81083": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-54067": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-11316": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-49832": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-115758": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-58945": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-119674": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-116002": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-75158": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-125209": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  },
+  "wine-dev-005:review-53827": {
+    "parent_region_units": [
+      "region-ae72b169e539"
+    ]
+  }
+}
