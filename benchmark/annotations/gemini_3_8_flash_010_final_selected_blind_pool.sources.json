@@ -1,0 +1,330 @@
+{
+  "wine-dev-010:region-b5177d359da9": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T012159040Z.jsonl",
+    "region_id": "scan-action-2-7",
+    "geometry": {
+      "id": "scan-action-2-7",
+      "center_x": 15.75,
+      "center_y": 6.75,
+      "radius": 2.25
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-7",
+      "category": "Global Riesling",
+      "purity": 0.917,
+      "intent_match": 0.792,
+      "recommended_action": "accept",
+      "acceptance_tier": "strong",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-55178": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-23256": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-75313": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-92340": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-62311": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-125336": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-26067": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-104191": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-21731": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-12519": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-6647": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:review-34046": {
+    "parent_region_units": [
+      "region-b5177d359da9"
+    ]
+  },
+  "wine-dev-010:region-dc9903fa552c": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T012159040Z.jsonl",
+    "region_id": "scan-action-2-8",
+    "geometry": {
+      "id": "scan-action-2-8",
+      "center_x": -6.75,
+      "center_y": 2.25,
+      "radius": 2.25
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "scan-action-2-8",
+      "category": "Australian Shiraz",
+      "purity": 0.917,
+      "intent_match": 0.667,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-128742": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-28185": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-114276": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-124780": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-45746": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-91355": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-9023": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-93449": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-122818": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-71433": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-69893": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:review-60759": {
+    "parent_region_units": [
+      "region-dc9903fa552c"
+    ]
+  },
+  "wine-dev-010:region-1dded59f59e6": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T012159040Z.jsonl",
+    "region_id": "subdivision-action-4-2",
+    "geometry": {
+      "id": "subdivision-action-4-2",
+      "center_x": -6.75,
+      "center_y": 12.75,
+      "radius": 0.75
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "subdivision-action-4-2",
+      "category": "Piedmont Red Wines",
+      "purity": 0.833,
+      "intent_match": 0.667,
+      "recommended_action": "accept",
+      "acceptance_tier": "soft",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-50924": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-111363": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-77343": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-97602": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-12298": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-11429": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-17939": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-73158": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-8887": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-22928": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-74777": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:review-85124": {
+    "parent_region_units": [
+      "region-1dded59f59e6"
+    ]
+  },
+  "wine-dev-010:region-ad5ddb4f7359": {
+    "run_file": "benchmark/runs/sdk-pilot/sdk_par_pilot_20260913T012159040Z.jsonl",
+    "region_id": "subdivision-action-4-5",
+    "geometry": {
+      "id": "subdivision-action-4-5",
+      "center_x": -6.75,
+      "center_y": 11.25,
+      "radius": 0.75
+    },
+    "compiled_filters": {},
+    "hidden_model_evidence": {
+      "id": "subdivision-action-4-5",
+      "category": "Sicilian Nero d'Avola",
+      "purity": 0.917,
+      "intent_match": 0.875,
+      "recommended_action": "accept",
+      "acceptance_tier": "strong",
+      "hard_constraint_match": true,
+      "analysis_failed": false,
+      "status": "accepted"
+    }
+  },
+  "wine-dev-010:review-58069": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-66545": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-29597": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-92490": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-59637": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-12882": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-3287": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-12515": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-126811": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-50677": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-109856": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  },
+  "wine-dev-010:review-187": {
+    "parent_region_units": [
+      "region-ad5ddb4f7359"
+    ]
+  }
+}

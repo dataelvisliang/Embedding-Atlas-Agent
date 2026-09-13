@@ -30,6 +30,7 @@ export class SearchSession {
     private failures = 0;
     private lowProgress = 0;
     private tokens = 0;
+    private finalizationReserved = false;
     private started: number;
     private busy = false;
     private distinctions: string[] = [];
@@ -59,6 +60,12 @@ export class SearchSession {
     private accepted(): Candidate[] { return [...this.candidates.values()].filter(c => c.status === 'accepted'); }
     private available(): Candidate[] {
         return [...this.candidates.values()].filter(c => c.status === 'proposed' || c.status === 'failed' && c.attempts <= this.limits.retries);
+    }
+    private reserveFinalizationForInspection(count: number): boolean {
+        const projected = count * this.limits.estimatedInspectionTokensPerRegion + this.limits.finalizationReserveTokens;
+        if (this.tokens + projected <= this.limits.tokens) return false;
+        this.finalizationReserved = true;
+        return true;
     }
     private canRefine(c: Candidate): boolean {
         return c.status === 'frontier' && !c.refined && c.depth < this.limits.depth && this.refinements < this.limits.refinements &&
@@ -122,6 +129,7 @@ export class SearchSession {
         if (name === 'define_task') return this.defineTask(parsed.data, true);
         if (!this.task) return this.deny(name, 'Define the task before searching.');
         if (name === 'finish_search') return this.finish(actionSchemas.finish_search.parse(parsed.data));
+        if (this.finalizationReserved) return this.deny(name, 'Finalization tokens are reserved. Do not collect more evidence; call finish_search with reason budget_reserve.');
         const targetMet = this.accepted().length >= this.task.target_count;
         if (targetMet && ['scan_projection', 'inspect_regions', 'subdivide_region'].includes(name))
             return this.deny(name, 'The accepted target is already met. Do not collect more evidence; compare if required, then call finish_search.');
@@ -153,6 +161,8 @@ export class SearchSession {
                 if (requested.some(c => !available.includes(c))) return this.deny(name, 'Circle already inspected or retry limit reached.');
                 if (requested.length > remaining) return this.deny(name, `Only ${remaining} circle inspections remain.`);
                 if (requested.length < Math.min(3, available.length, remaining)) return this.deny(name, 'Inspect at least three candidates together, or all available if fewer remain.');
+                if (this.reserveFinalizationForInspection(requested.length))
+                    return this.deny(name, 'Finalization tokens are reserved before this inspection batch. Call finish_search with reason budget_reserve.');
                 args = { regions: requested.map(c => ({ id: c.id, center_x: c.center_x, center_y: c.center_y, radius: c.radius })), sample_size: 12, intent: this.evidenceIntent() };
             } else {
                 if (requested.some(c => c.status !== 'accepted')) return this.deny(name, 'Compare accepted evidence only.');
@@ -261,7 +271,8 @@ export class SearchSession {
         if (data.reason === 'sufficient_evidence' && !sufficient) return this.deny('finish_search', 'Requested target has not been met.');
         if (this.task!.require_diversity && ids.length > 1 && data.distinctions.length !== ids.length) return this.deny('finish_search', 'Give one evidence-based distinction per selected finding.');
         if (this.task!.mode === 'comparison' && sufficient && !this.comparisonResults.some(r => ids.every(id => r.result.comparison_key.split('|').includes(id)))) return this.deny('finish_search', 'Compare the selected findings before claiming comparison success.');
-        if (!sufficient) {
+        const reserveAllowsPartial = this.finalizationReserved && data.reason === 'budget_reserve';
+        if (!sufficient && !reserveAllowsPartial) {
             if (this.accepted().length >= this.task!.target_count) return this.deny('finish_search', 'Enough accepted evidence exists; select it before stopping.');
             if ([...this.candidates.values()].some(c => this.canRefine(c))) return this.deny('finish_search', 'An actionable relevant mixed frontier remains.');
             if (!this.scans.size) return this.deny('finish_search', 'No spatial evidence has been collected.');
@@ -278,10 +289,10 @@ export class SearchSession {
     modelState() {
         const targetMet = Boolean(this.task && this.accepted().length >= this.task.target_count);
         return { contract: CONTRACT_VERSION, bounds: this.bounds, task: this.task, terminal: this.terminal,
-            remaining: { actions: this.limits.actions - this.actions, scans: this.limits.scans - this.scans.size, circles: this.limits.inspected - this.inspected, tokens: this.limits.tokens - this.tokens },
+            remaining: { actions: this.limits.actions - this.actions, scans: this.limits.scans - this.scans.size, circles: this.limits.inspected - this.inspected, tokens: this.limits.tokens - this.tokens, finalization_reserved: this.finalizationReserved },
             low_progress_batches: this.lowProgress,
             target_met: targetMet,
-            next_required: targetMet ? this.task?.mode === 'comparison' && !this.comparisonResults.length ? 'compare_regions' : 'finish_search' : null,
+            next_required: targetMet ? this.task?.mode === 'comparison' && !this.comparisonResults.length ? 'compare_regions' : 'finish_search' : this.finalizationReserved ? 'finish_search' : null,
             candidates: [...this.candidates.values()].map(c => ({
                 id: c.id, xy: [c.center_x, c.center_y], radius: c.radius, parent_id: c.parent_id,
                 status: c.status, population: c.population, can_refine: this.canRefine(c),
@@ -300,7 +311,7 @@ export class SearchSession {
             relevant_themes: this.accepted().flatMap(c => c.evidence?.themes || []),
             frontier: [...this.candidates.values()].filter(c => c.status === 'frontier'),
             candidates: [...this.candidates.values()].map(c => ({ ...c, ...c.evidence, recommended_action: c.status === 'accepted' ? 'accept' : c.status === 'rejected' ? 'reject' : c.status, analysis_failed: c.status === 'failed' })),
-            remaining: { toolCalls: Math.max(0, this.limits.actions - this.actions), modelTokens: Math.max(0, this.limits.tokens - this.tokens) },
+            remaining: { toolCalls: Math.max(0, this.limits.actions - this.actions), modelTokens: Math.max(0, this.limits.tokens - this.tokens), finalizationReserved: this.finalizationReserved },
             elapsed_ms: this.now() - this.started, no_progress_rounds: this.lowProgress, failure_attempts: this.failures,
             trajectory: [...this.events], selected_ids: [...this.selectedIds] };
     }

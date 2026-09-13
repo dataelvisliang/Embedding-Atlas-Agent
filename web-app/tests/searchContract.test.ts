@@ -120,6 +120,18 @@ const finish = (s: SearchSession, f: Fixture) => s.act('finish_search', { reason
     now = 120001; await s.act('define_task', task(), f);
     assert.equal(s.terminal?.state, 'budget_exhausted'); assert.equal(f.calls.length, 0);
 }
+// A prospective inspection cannot consume the finalization reserve; useful partial evidence remains explainable.
+{
+    const { s, f } = await setup({ target_count: 4 }); await inspect(s, f);
+    for (const i of [3, 4, 5]) s.candidates.set(`c${i}`, { id: `c${i}`, center_x: 3 + i * 3, center_y: 11, radius: 1, depth: 0, population: 10, status: 'proposed', attempts: 0, refined: false, acceptance_tier: null });
+    s.recordTokens(70000);
+    const calls = f.calls.length;
+    await inspect(s, f, ['c3', 'c4', 'c5']);
+    assert.equal(f.calls.length, calls, 'the prospective batch is blocked before consuming finalization tokens');
+    assert.equal(s.modelState().next_required, 'finish_search');
+    await s.act('finish_search', { reason: 'budget_reserve', finding_ids: ['c0', 'c1', 'c2'], explanation: 'Further inspection would consume the finalization reserve.', distinctions: ['a', 'b', 'c'] }, f);
+    assert.equal(s.terminal?.state, 'partial_success');
+}
 // Unsupported modes are explicit, never disguised as successful region retrieval.
 {
     const { s } = await setup({ mode: 'exact' }); assert.equal(s.terminal?.state, 'unsupported');

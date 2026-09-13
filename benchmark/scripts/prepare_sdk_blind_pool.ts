@@ -31,13 +31,15 @@ function predicate(region: Geometry, filters: Filters): string {
     return clauses.join(' AND ');
 }
 
-function args(): { run: string; output: string } {
+function args(): { run: string; output: string; scope: 'selected' | 'inspected' } {
     const values = process.argv.slice(2);
     const get = (flag: string) => values[values.indexOf(flag) + 1];
     const run = get('--run');
     const output = get('--output');
+    const scope = get('--scope') || 'selected';
     if (!run || !output) throw new Error('Usage: --run <sdk pilot jsonl> --output <blind pool jsonl>');
-    return { run: path.resolve(root, run), output: path.resolve(root, output) };
+    if (scope !== 'selected' && scope !== 'inspected') throw new Error('--scope must be selected or inspected');
+    return { run: path.resolve(root, run), output: path.resolve(root, output), scope };
 }
 
 async function main() {
@@ -58,9 +60,14 @@ async function main() {
         for (const event of run.trajectory) {
             for (const region of event.parameters?.regions || []) geometries.set(region.id, region);
         }
-        const modelEvidence = new Map((run.accepted || []).map((region: any) => [region.id, region]));
+        const modelEvidence = new Map([...(run.accepted || []), ...(run.rejected || []), ...(run.frontier || [])].map((region: any) => [region.id, region]));
+        const inspectedIds = [...new Set<string>(run.trajectory
+            .filter((event: any) => event.tool === 'inspect_regions' && event.status === 'accepted')
+            .flatMap((event: any) => event.parameters?.region_ids || [])
+            .filter((id: unknown): id is string => typeof id === 'string'))];
+        const regionIds = options.scope === 'selected' ? selectedIds : inspectedIds;
         const filters: Filters = run.compiled_task?.hard_filters || {};
-        for (const regionId of selectedIds) {
+        for (const regionId of regionIds) {
             const geometry = geometries.get(regionId);
             if (!geometry) throw new Error(`No inspected geometry for ${run.query_id}:${regionId}`);
             const result = await coordinator.query(`
@@ -103,7 +110,7 @@ async function main() {
     blind.sort((a, b) => `${a.query_id}:${a.unit_type}:${a.unit_id}`.localeCompare(`${b.query_id}:${b.unit_type}:${b.unit_id}`));
     await writeFile(options.output, blind.map(row => JSON.stringify(row)).join('\n') + '\n', 'utf8');
     await writeFile(options.output.replace(/\.jsonl$/, '.sources.json'), JSON.stringify(sources, null, 2) + '\n', 'utf8');
-    console.log(JSON.stringify({ output: options.output, units: blind.length, regions: blind.filter(row => row.unit_type === 'region').length, items: blind.filter(row => row.unit_type === 'item').length }));
+    console.log(JSON.stringify({ output: options.output, scope: options.scope, units: blind.length, regions: blind.filter(row => row.unit_type === 'region').length, items: blind.filter(row => row.unit_type === 'item').length }));
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

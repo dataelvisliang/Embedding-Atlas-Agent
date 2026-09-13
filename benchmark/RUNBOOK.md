@@ -51,7 +51,7 @@ The pool hides system provenance in `pool.sources.json`. Do not give that file t
 
 Duplicate each pooled unit for at least two annotators. Store completed labels in `annotations/judgments.jsonl` following `schemas/judgment.schema.json` and `ANNOTATION_GUIDE.md`.
 
-For SDK pilot traces, first reconstruct a blind pool from recorded geometry and deterministic samples with `scripts/prepare_sdk_blind_pool.ts`. Keep its `.sources.json` hidden until the annotation pass is finished. AI-assisted reviews must use a distinct annotator ID and artifact; they do not count toward the two independent human annotations.
+For SDK pilot traces, first reconstruct a blind pool from recorded geometry and deterministic samples with `scripts/prepare_sdk_blind_pool.ts`. Its default `--scope selected` labels returned findings; use `--scope inspected` when auditing a no-evidence outcome, so rejected regions are reviewed too. Keep its `.sources.json` hidden until the annotation pass is finished. AI-assisted reviews must use a distinct annotator ID and artifact; they do not count toward the two independent human annotations.
 
 ## 5. Validate
 

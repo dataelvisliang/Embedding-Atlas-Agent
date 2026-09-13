@@ -26,6 +26,8 @@ Generic tool names do not imply arbitrary-dataset adapters: the current SQL meta
 
 Every Agent-compiled SQL filter requires a verbatim source quote. Numeric values and every country/variety value must occur in that quote; semantic normalization belongs in a trusted adapter, not model improvisation. Unspecified constraints are omitted, never represented by zero. This checks provenance, not the full semantic correctness of task compilation; the generated task remains part of evaluation. A benchmark oracle task enters only through the in-process pilot runner's separately labelled seed method and then obeys the same retrieval, evidence and terminal invariants. The public API does not accept oracle TaskSpecs.
 
+An unbounded “good value” request is evaluated comparatively from sampled price, points and review quality. Literal mentions of “bargain” or “good value” are optional corroboration, not required evidence, and the Agent must not invent a numeric price cutoff.
+
 `finding_unit` defines ONE style/theme/region. `target_count` and between-region diversity belong to the whole session. Analyzer must not lower a pure single-style circle's relevance because the user wants multiple styles overall, or reward a mixed circle for containing the entire requested count.
 
 `exact` record requests return `unsupported`; this region workflow must not silently substitute region counts for record counts. Semantic, exploration and comparison return regions. Map-selection scoping requires an explicit separate scope adapter and must not silently search the whole map.
@@ -58,6 +60,8 @@ Unknown/failed analysis cannot justify `no_evidence`. Exhaustion refers to gener
 Once the accepted target is met, the session exposes `target_met=true` and blocks further scan, inspection and subdivision. Only a required comparison and `finish_search` remain legal. This prevents an Agent from spending the remaining budget after it already has sufficient evidence.
 
 Token limits are checked against returned usage. A running model request/batch may overshoot the limit before its usage is known; it prevents subsequent actions, not charges already incurred. Failure responses can have unreported usage. Live output must not imply these are exact billing totals.
+
+Before an inspection batch, the session reserves a bounded finalization allowance using a conservative per-circle estimate. If the batch would consume that allowance, it is blocked and the model must call `finish_search` with `budget_reserve`; accepted findings then return as a clearly labelled partial result rather than an unexplainable budget exhaustion.
 
 ## Evaluation contract
 
